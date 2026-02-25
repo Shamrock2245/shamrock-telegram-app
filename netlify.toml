@@ -1,27 +1,46 @@
-# Shamrock Telegram Mini App — Netlify Config
+# Shamrock Bail Bonds — Telegram Mini Apps
+# https://shamrock-telegram.netlify.app
 
 [build]
   publish = "."
 
+# Telegram WebView requires permissive framing
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "ALLOWALL"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "frame-ancestors *"
     Permissions-Policy = "geolocation=(self), camera=(self)"
+    Access-Control-Allow-Origin = "*"
+
+# Cache static assets
+[[headers]]
+  for = "/shared/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
 
 [[headers]]
-  for = "/*.html"
+  for = "*.css"
   [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "public, max-age=3600"
 
 [[headers]]
-  for = "/*.css"
+  for = "*.js"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=3600"
 
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+# SPA-style fallbacks for each mini app
+[[redirects]]
+  from = "/intake/*"
+  to = "/intake/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/payment/*"
+  to = "/payment/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/status/*"
+  to = "/status/index.html"
+  status = 200

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Case Status — Shamrock Bail Bonds</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="../shared/theme.css">
+    <style>
+        .coming-soon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: var(--space-xl);
+            text-align: center;
+        }
+
+        .coming-soon .icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-lg);
+        }
+
+        .coming-soon h1 {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .coming-soon p {
+            color: var(--text-secondary);
+            max-width: 320px;
+            margin-bottom: var(--space-xl);
+            line-height: 1.6;
+        }
+
+        .coming-soon a {
+            color: var(--shamrock-emerald);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shamrock-ambient"></div>
+    <div class="coming-soon">
+        <div class="icon">📊</div>
+        <h1>My Case Status</h1>
+        <p>Case tracking and court date reminders are coming soon. Need an update now? Call us directly.</p>
+        <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary">📞 Call (239) 332-2245</a>
+    </div>
+    <script src="../shared/brand.js"></script>
+    <script>initTheme(); initTelegram();</script>
+</body>
+
+</html>
