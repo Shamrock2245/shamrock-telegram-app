@@ -13,7 +13,7 @@
 const CONFIG = {
     // GAS Web App URL — the doPost() endpoint
     // This is your deployed GAS web app URL (exec URL)
-    GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycbyYourDeploymentIdHere/exec',
+    GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycby5N-lHvM2XzKnX38KSqekq0ENWMLYqYM2bYxuZcRRAQcBhP3RvBaF0CbQa9gKK73QI4w/exec',
 
     // Action identifier so GAS knows this is from the Mini App
     ACTION: 'telegram_mini_app_intake',
