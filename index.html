@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shamrock Bail Bonds — Quick Intake</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HEADER                                               -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <header class="app-header">
+        <div class="logo">
+            <span class="logo-icon">🍀</span>
+            <div class="logo-text">
+                <h1>Shamrock Bail Bonds</h1>
+                <p class="tagline">Fast. Confidential. Statewide.</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()"
+                aria-label="Toggle dark/light mode"></button>
+            <div class="step-indicator">
+                <div class="step-dots">
+                    <span class="dot active" data-step="1"></span>
+                    <span class="dot" data-step="2"></span>
+                    <span class="dot" data-step="3"></span>
+                    <span class="dot" data-step="4"></span>
+                    <span class="dot" data-step="5"></span>
+                </div>
+                <span class="step-label">Step <span id="currentStep">1</span> of 5</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- PROGRESS BAR                                         -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar" style="width: 20%"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- FORM CONTAINER                                       -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <main class="form-container">
+        <form id="intakeForm" novalidate>
+
+            <!-- ─── STEP 1: DEFENDANT INFO ───────────────────── -->
+            <section class="form-step active" data-step="1">
+                <div class="step-header">
+                    <span class="step-icon">👤</span>
+                    <h2>Who needs bail?</h2>
+                    <p class="step-description">Tell us about the person who is currently in custody.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="defFirstName">First Name <span class="required">*</span></label>
+                    <input type="text" id="defFirstName" name="defFirstName" placeholder="John" required
+                        autocomplete="given-name">
+                </div>
+
+                <div class="form-group">
+                    <label for="defLastName">Last Name <span class="required">*</span></label>
+                    <input type="text" id="defLastName" name="defLastName" placeholder="Doe" required
+                        autocomplete="family-name">
+                </div>
+
+                <div class="form-group">
+                    <label for="defDOB">Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="defDOB" name="defDOB" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="defFacility">Jail / Facility <span class="required">*</span></label>
+                    <select id="defFacility" name="defFacility" required>
+                        <option value="" disabled selected>Where are they being held?</option>
+                        <option value="Lee County Jail">Lee County Jail (Ft. Myers)</option>
+                        <option value="Collier County Jail">Collier County Jail (Naples)</option>
+                        <option value="Charlotte County Jail">Charlotte County Jail</option>
+                        <option value="Hendry County Jail">Hendry County Jail</option>
+                        <option value="Glades County Jail">Glades County Jail</option>
+                        <option value="Sarasota County Jail">Sarasota County Jail</option>
+                        <option value="Manatee County Jail">Manatee County Jail</option>
+                        <option value="Hillsborough County Jail">Hillsborough County Jail (Tampa)</option>
+                        <option value="Pinellas County Jail">Pinellas County Jail (St. Pete)</option>
+                        <option value="Orange County Jail">Orange County Jail (Orlando)</option>
+                        <option value="Broward County Jail">Broward County Jail (Ft. Lauderdale)</option>
+                        <option value="Miami-Dade County Jail">Miami-Dade County Jail</option>
+                        <option value="Palm Beach County Jail">Palm Beach County Jail</option>
+                        <option value="Duval County Jail">Duval County Jail (Jacksonville)</option>
+                        <option value="other">Other (I'll type it)</option>
+                    </select>
+                </div>
+
+                <div class="form-group hidden" id="defFacilityOtherGroup">
+                    <label for="defFacilityOther">Specify Facility</label>
+                    <input type="text" id="defFacilityOther" name="defFacilityOther" placeholder="County or jail name">
+                </div>
+
+                <div class="form-group">
+                    <label for="defCharges">Charges (if known)</label>
+                    <input type="text" id="defCharges" name="defCharges" placeholder="e.g. DUI, Theft, Battery">
+                </div>
+
+                <div class="form-group">
+                    <label for="defBondAmount">Bond Amount (if known)</label>
+                    <input type="text" id="defBondAmount" name="defBondAmount" inputmode="decimal"
+                        placeholder="e.g. $5,000">
+                </div>
+            </section>
+
+            <!-- ─── STEP 2: YOUR INFO (INDEMNITOR) ──────────── -->
+            <section class="form-step" data-step="2">
+                <div class="step-header">
+                    <span class="step-icon">🙋</span>
+                    <h2>Your Information</h2>
+                    <p class="step-description">You are the co-signer (indemnitor) responsible for the bond.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="indFirstName">Your First Name <span class="required">*</span></label>
+                    <input type="text" id="indFirstName" name="indFirstName" placeholder="Jane" required
+                        autocomplete="given-name">
+                </div>
+
+                <div class="form-group">
+                    <label for="indLastName">Your Last Name <span class="required">*</span></label>
+                    <input type="text" id="indLastName" name="indLastName" placeholder="Doe" required
+                        autocomplete="family-name">
+                </div>
+
+                <div class="form-group">
+                    <label for="indDOB">Your Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="indDOB" name="indDOB" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="indRelation">Relationship to Defendant <span class="required">*</span></label>
+                    <select id="indRelation" name="indRelation" required>
+                        <option value="" disabled selected>Select relationship</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Child">Child (Adult)</option>
+                        <option value="Significant Other">Significant Other</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Employer">Employer</option>
+                        <option value="Attorney">Attorney</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="indPhone">Your Phone <span class="required">*</span></label>
+                    <input type="tel" id="indPhone" name="indPhone" placeholder="(555) 123-4567" required
+                        autocomplete="tel">
+                </div>
+
+                <div class="form-group">
+                    <label for="indEmail">Your Email <span class="required">*</span></label>
+                    <input type="email" id="indEmail" name="indEmail" placeholder="jane@email.com" required
+                        autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="indAddress">Your Full Address <span class="required">*</span></label>
+                    <textarea id="indAddress" name="indAddress" rows="2" placeholder="123 Main St, Fort Myers, FL 33901"
+                        required></textarea>
+                </div>
+            </section>
+
+            <!-- ─── STEP 3: EMPLOYMENT & REFERENCES ─────────── -->
+            <section class="form-step" data-step="3">
+                <div class="step-header">
+                    <span class="step-icon">💼</span>
+                    <h2>Employment & References</h2>
+                    <p class="step-description">This helps us process your bond faster.</p>
+                </div>
+
+                <div class="section-divider">
+                    <span class="divider-label">Your Employment</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="indEmployer">Employer Name</label>
+                    <input type="text" id="indEmployer" name="indEmployer" placeholder="Company name">
+                </div>
+
+                <div class="form-group">
+                    <label for="indJobTitle">Job Title</label>
+                    <input type="text" id="indJobTitle" name="indJobTitle" placeholder="Your position">
+                </div>
+
+                <div class="section-divider">
+                    <span class="divider-label">Reference 1 <span class="required">*</span></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref1Name">Full Name <span class="required">*</span></label>
+                    <input type="text" id="ref1Name" name="ref1Name" placeholder="Full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref1Phone">Phone <span class="required">*</span></label>
+                    <input type="tel" id="ref1Phone" name="ref1Phone" placeholder="(555) 234-5678" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref1Relation">Relationship</label>
+                    <input type="text" id="ref1Relation" name="ref1Relation" placeholder="e.g. Friend, Coworker">
+                </div>
+
+                <div class="section-divider">
+                    <span class="divider-label">Reference 2 <span class="required">*</span></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref2Name">Full Name <span class="required">*</span></label>
+                    <input type="text" id="ref2Name" name="ref2Name" placeholder="Full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref2Phone">Phone <span class="required">*</span></label>
+                    <input type="tel" id="ref2Phone" name="ref2Phone" placeholder="(555) 345-6789" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ref2Relation">Relationship</label>
+                    <input type="text" id="ref2Relation" name="ref2Relation" placeholder="e.g. Family, Neighbor">
+                </div>
+            </section>
+
+            <!-- ─── STEP 4: DOCUMENTS & LOCATION ────────────── -->
+            <section class="form-step" data-step="4">
+                <div class="step-header">
+                    <span class="step-icon">📄</span>
+                    <h2>Documents & Location</h2>
+                    <p class="step-description">Upload your ID and share your location for compliance.</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Photo ID (Front) <span class="required">*</span></label>
+                    <div class="file-upload" id="idFrontUpload">
+                        <input type="file" id="idFront" name="idFront" accept="image/*" capture="environment" required>
+                        <div class="file-upload-content">
+                            <span class="upload-icon">📷</span>
+                            <span class="upload-text">Tap to take photo or upload</span>
+                            <span class="upload-hint">Driver's license, State ID, or Passport</span>
+                        </div>
+                        <div class="file-preview hidden" id="idFrontPreview"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Photo ID (Back)</label>
+                    <div class="file-upload" id="idBackUpload">
+                        <input type="file" id="idBack" name="idBack" accept="image/*" capture="environment">
+                        <div class="file-upload-content">
+                            <span class="upload-icon">📷</span>
+                            <span class="upload-text">Back of ID (optional)</span>
+                        </div>
+                        <div class="file-preview hidden" id="idBackPreview"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Location</label>
+                    <button type="button" class="location-btn" id="locationBtn" onclick="captureLocation()">
+                        <span class="loc-icon">📍</span>
+                        <span class="loc-text">Share My Location</span>
+                    </button>
+                    <div class="location-result hidden" id="locationResult">
+                        <span class="loc-check">✅</span>
+                        <span id="locationDisplay">Location captured</span>
+                    </div>
+                    <input type="hidden" id="gpsLat" name="gpsLat">
+                    <input type="hidden" id="gpsLng" name="gpsLng">
+                </div>
+            </section>
+
+            <!-- ─── STEP 5: REVIEW & CONSENT ────────────────── -->
+            <section class="form-step" data-step="5">
+                <div class="step-header">
+                    <span class="step-icon">✅</span>
+                    <h2>Review & Submit</h2>
+                    <p class="step-description">Please review your information before submitting.</p>
+                </div>
+
+                <div class="review-card" id="reviewSummary">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="consent-box">
+                    <label class="consent-label">
+                        <input type="checkbox" id="consentCheck" name="consent" required>
+                        <span class="checkmark"></span>
+                        <span class="consent-text">
+                            I agree to sign documents electronically, allow location capture at signing,
+                            receive text/voice communications about this case, and authorize Shamrock Bail
+                            Bonds to use this data for underwriting purposes.
+                        </span>
+                    </label>
+                </div>
+
+                <div class="legal-note">
+                    <p>📞 Questions? Call us 24/7 at <a href="tel:+12393322245">(239) 332-2245</a></p>
+                </div>
+            </section>
+
+        </form>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- NAVIGATION BUTTONS                                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <footer class="form-footer">
+        <button type="button" class="btn btn-back hidden" id="btnBack" onclick="prevStep()">
+            ← Back
+        </button>
+        <button type="button" class="btn btn-next" id="btnNext" onclick="nextStep()">
+            Continue →
+        </button>
+        <button type="button" class="btn btn-submit hidden" id="btnSubmit" onclick="submitForm()">
+            <span class="btn-submit-text">Submit Application</span>
+            <span class="btn-submit-loader hidden" id="submitLoader">
+                <span class="spinner"></span> Submitting...
+            </span>
+        </button>
+    </footer>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SUCCESS SCREEN                                       -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="success-screen hidden" id="successScreen">
+        <div class="success-content">
+            <div class="success-animation">
+                <span class="success-icon">🍀</span>
+            </div>
+            <h2>Application Received!</h2>
+            <p class="success-ref">Reference: <strong id="successRefId"></strong></p>
+            <p class="success-message">
+                A licensed bondsman is reviewing your case right now.
+                You'll receive a call or text within minutes.
+            </p>
+            <div class="success-actions">
+                <a href="tel:+12393322245" class="btn btn-call">
+                    📞 Call Us Now
+                </a>
+                <a href="https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8" class="btn btn-pay"
+                    target="_blank">
+                    💳 Make a Payment
+                </a>
+            </div>
+            <p class="success-footer">Available 24/7 · All 67 Florida Counties</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
