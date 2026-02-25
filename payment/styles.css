@@ -1,0 +1,673 @@
+/* ═══════════════════════════════════════════════════════════════
+   Shamrock Bail Bonds — Payment Mini App Styles
+   Builds on ../shared/theme.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Layout ── */
+.app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--space-md);
+    padding-bottom: 100px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Header ── */
+.app-header {
+    padding: var(--space-md) 0 var(--space-lg);
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.header-brand .logo {
+    font-size: 1.8rem;
+}
+
+.header-brand h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tagline {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.theme-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+    background: var(--bg-glass);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all var(--transition-fast);
+}
+
+.theme-toggle:hover {
+    background: var(--input-bg);
+}
+
+[data-theme="light"] .theme-icon::after {
+    content: '☀️';
+}
+
+/* ── Steps ── */
+.step {
+    animation: stepIn 0.35s ease;
+}
+
+.step.hidden {
+    display: none;
+}
+
+.step.active {
+    display: block;
+}
+
+@keyframes stepIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--shamrock-emerald), var(--shamrock-emerald-dark));
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.step-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.step-desc {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-bottom: var(--space-lg);
+    line-height: 1.5;
+}
+
+/* ── Form Inputs ── */
+.form-group {
+    margin-bottom: var(--space-md);
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-icon-wrap {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.input-icon-wrap input {
+    width: 100%;
+    padding: 14px 14px 14px 44px;
+    border: 1.5px solid var(--input-border);
+    border-radius: var(--radius-md);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.input-icon-wrap input:focus {
+    border-color: var(--shamrock-emerald);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.input-icon-wrap input::placeholder {
+    color: var(--text-muted);
+}
+
+/* ── Buttons ── */
+.full-width {
+    width: 100%;
+}
+
+.btn-text {
+    transition: opacity 0.2s;
+}
+
+.btn-loader.hidden {
+    display: none;
+}
+
+/* ── Account Card ── */
+.account-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+    animation: stepIn 0.3s ease;
+}
+
+.account-card.hidden {
+    display: none;
+}
+
+.account-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--shamrock-emerald), var(--shamrock-emerald-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.account-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.account-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.account-detail {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ── Payment Type Selector ── */
+.payment-types {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.payment-type {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-md) var(--space-sm);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-glass);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font-primary);
+    color: var(--text-primary);
+}
+
+.payment-type:hover {
+    border-color: var(--shamrock-emerald);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.payment-type.active {
+    border-color: var(--shamrock-emerald);
+    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.pt-icon {
+    font-size: 1.5rem;
+}
+
+.pt-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ── Preset Amount Grid ── */
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.preset-btn {
+    padding: 14px 8px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+    border-color: var(--shamrock-gold);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.preset-btn.active {
+    border-color: var(--shamrock-gold);
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--shamrock-gold);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* ── Amount Display ── */
+.amount-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+}
+
+.amount-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.amount-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--shamrock-emerald);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Payment Summary ── */
+.payment-summary {
+    margin-bottom: var(--space-lg);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.summary-val {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.summary-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+.summary-total {
+    font-size: 1.05rem;
+}
+
+.summary-total .summary-val {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--shamrock-emerald);
+}
+
+/* ── Pay Now Button ── */
+.pay-now-btn {
+    font-size: 1.1rem;
+    padding: 18px;
+    text-decoration: none;
+    margin-bottom: var(--space-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.pay-now-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+.pay-icon {
+    margin-right: 6px;
+}
+
+.secure-note {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* ── Alt Payment Methods ── */
+.alt-methods {
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--space-lg);
+}
+
+.alt-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    margin-bottom: var(--space-md);
+}
+
+.alt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    width: 100%;
+    padding: 12px;
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.alt-btn:hover {
+    background: var(--input-bg);
+    border-color: var(--shamrock-emerald);
+}
+
+/* ── Alert ── */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    margin-top: var(--space-md);
+    font-size: 0.85rem;
+    animation: stepIn 0.3s ease;
+}
+
+.alert.hidden {
+    display: none;
+}
+
+.alert-warn {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: var(--shamrock-gold);
+}
+
+.alert p {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+/* ── Success Screen ── */
+.success-container {
+    text-align: center;
+    padding-top: var(--space-2xl);
+}
+
+.success-check {
+    margin-bottom: var(--space-lg);
+}
+
+.checkmark {
+    width: 80px;
+    height: 80px;
+}
+
+.checkmark-circle {
+    stroke: var(--shamrock-emerald);
+    stroke-width: 2;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    animation: checkStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+    stroke: var(--shamrock-emerald);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: checkStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+@keyframes checkStroke {
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.success-container h2 {
+    font-size: 1.4rem;
+    margin-bottom: var(--space-sm);
+}
+
+.success-msg {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    max-width: 320px;
+    margin: 0 auto var(--space-xl);
+    line-height: 1.5;
+}
+
+.success-ref {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-xl);
+    text-align: left;
+}
+
+.ref-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ref-id {
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--shamrock-emerald);
+}
+
+.success-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* ── Modal ── */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    padding: var(--space-xl) var(--space-lg);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content h3 {
+    font-size: 1.15rem;
+    margin-bottom: var(--space-sm);
+}
+
+.modal-content>p {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-bottom: var(--space-lg);
+}
+
+.pay-method {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-sm);
+}
+
+.pay-method-icon {
+    font-size: 1.5rem;
+}
+
+.pay-method strong {
+    display: block;
+    font-size: 0.9rem;
+}
+
+.pay-handle {
+    font-size: 0.82rem;
+    color: var(--shamrock-emerald);
+    font-weight: 500;
+}
+
+.modal-note {
+    margin-top: var(--space-md);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* ── Utility ── */
+.hidden {
+    display: none !important;
+}
