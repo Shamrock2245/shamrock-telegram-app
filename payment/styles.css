@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Shamrock Bail Bonds — Payment Mini App Styles
+   Shamrock Bail Bonds — Check-In & Payments Styles
    Builds on ../shared/theme.css
    ═══════════════════════════════════════════════════════════════ */
 
@@ -63,10 +63,6 @@
 
 .theme-toggle:hover {
     background: var(--input-bg);
-}
-
-[data-theme="light"] .theme-icon::after {
-    content: '☀️';
 }
 
 /* ── Steps ── */
@@ -235,51 +231,249 @@
     color: var(--text-secondary);
 }
 
-/* ── Payment Type Selector ── */
-.payment-types {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
+/* ═══════════════════════════════════════
+   PURPOSE SELECTOR CARDS (Step 2)
+   ═══════════════════════════════════════ */
+.purpose-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
-.payment-type {
+.purpose-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: var(--space-md) var(--space-sm);
-    border: 1.5px solid var(--border-color);
-    border-radius: var(--radius-md);
+    text-align: center;
+    padding: var(--space-xl) var(--space-lg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
     background: var(--bg-glass);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.25s ease;
     font-family: var(--font-primary);
     color: var(--text-primary);
+    overflow: hidden;
 }
 
-.payment-type:hover {
-    border-color: var(--shamrock-emerald);
-    background: rgba(16, 185, 129, 0.05);
+.purpose-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    border-radius: inherit;
 }
 
-.payment-type.active {
+.purpose-card[data-purpose="checkin"]::before {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(6, 95, 70, 0.04));
+}
+
+.purpose-card[data-purpose="payment"]::before {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(180, 83, 9, 0.04));
+}
+
+.purpose-card:hover::before,
+.purpose-card:active::before {
+    opacity: 1;
+}
+
+.purpose-card:hover,
+.purpose-card:active {
     border-color: var(--shamrock-emerald);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.purpose-card[data-purpose="payment"]:hover,
+.purpose-card[data-purpose="payment"]:active {
+    border-color: var(--shamrock-gold);
+}
+
+.purpose-icon {
+    font-size: 2.4rem;
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 1;
+}
+
+.purpose-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+}
+
+.purpose-card p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: var(--space-sm);
+    position: relative;
+    z-index: 1;
+}
+
+.purpose-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 1;
+}
+
+.tag-free {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--shamrock-emerald);
+}
+
+.tag-payment {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--shamrock-gold);
+}
+
+/* ═══════════════════════════════════════
+   CHECK-IN CARD (Step 3A)
+   ═══════════════════════════════════════ */
+.checkin-card {
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+}
+
+.checkin-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-lg) var(--space-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.checkin-item:hover {
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.checkin-item:active {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.checkin-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
     background: rgba(16, 185, 129, 0.1);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
 }
 
-.pt-icon {
-    font-size: 1.5rem;
+.checkin-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.pt-label {
-    font-size: 0.78rem;
+.checkin-info strong {
+    font-size: 0.95rem;
     font-weight: 600;
-    text-align: center;
 }
 
-/* ── Preset Amount Grid ── */
+.checkin-status {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.checkin-status.done {
+    color: var(--shamrock-emerald);
+    font-weight: 600;
+}
+
+.checkin-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 0 var(--space-md);
+}
+
+/* Selfie preview */
+.selfie-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid var(--shamrock-emerald);
+    flex-shrink: 0;
+}
+
+.selfie-preview.hidden {
+    display: none;
+}
+
+.selfie-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Location badge */
+.location-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--shamrock-emerald);
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.location-badge.hidden {
+    display: none;
+}
+
+.location-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--shamrock-emerald);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.hidden-file-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════
+   PRESET AMOUNT GRID (Step 3B)
+   ═══════════════════════════════════════ */
 .preset-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -458,6 +652,11 @@
     border-color: var(--shamrock-emerald);
 }
 
+.alt-btn-cashapp:hover {
+    border-color: #00D632;
+    background: rgba(0, 214, 50, 0.06);
+}
+
 /* ── Alert ── */
 .alert {
     display: flex;
@@ -567,7 +766,9 @@
     gap: var(--space-sm);
 }
 
-/* ── Modal ── */
+/* ═══════════════════════════════════════
+   CASHAPP MODAL
+   ═══════════════════════════════════════ */
 .modal {
     position: fixed;
     inset: 0;
@@ -645,6 +846,11 @@
     margin-bottom: var(--space-sm);
 }
 
+.cashapp-method {
+    border-color: rgba(0, 214, 50, 0.3);
+    background: rgba(0, 214, 50, 0.06);
+}
+
 .pay-method-icon {
     font-size: 1.5rem;
 }
@@ -658,6 +864,12 @@
     font-size: 0.82rem;
     color: var(--shamrock-emerald);
     font-weight: 500;
+}
+
+.cashapp-handle {
+    color: #00D632;
+    font-weight: 700;
+    font-size: 1rem;
 }
 
 .modal-note {

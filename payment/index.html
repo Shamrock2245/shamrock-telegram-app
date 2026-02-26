@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Make a Payment — Shamrock Bail Bonds</title>
-    <meta name="description" content="Pay your bail bond premium, check-in fee, or balance securely.">
+    <title>Check-In & Payments — Shamrock Bail Bonds</title>
+    <meta name="description" content="Check in or make a payment — fast, secure, from your phone.">
 
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -26,8 +26,8 @@
                 <div class="header-brand">
                     <span class="logo">🍀</span>
                     <div>
-                        <h1>Make a Payment</h1>
-                        <p class="tagline">Shamrock Bail Bonds</p>
+                        <h1>Shamrock</h1>
+                        <p class="tagline">Check-In & Payments</p>
                     </div>
                 </div>
                 <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
@@ -36,7 +36,7 @@
             </div>
         </header>
 
-        <!-- ═══════ STEP 1: WHO ARE YOU ═══════ -->
+        <!-- ═══════ STEP 1: IDENTITY ═══════ -->
         <section id="stepIdentify" class="step active">
             <div class="step-header">
                 <span class="step-badge">1</span>
@@ -66,24 +66,23 @@
                 <span class="btn-loader shamrock-spinner hidden"></span>
             </button>
 
-            <!-- If not found -->
             <div id="notFoundMsg" class="alert alert-warn hidden">
                 <span>⚠️</span>
                 <div>
                     <strong>Account not found</strong>
-                    <p>Don't worry — you can still make a payment. We'll match it to your account.</p>
+                    <p>Don't worry — you can still proceed. We'll match it to your account.</p>
                 </div>
             </div>
         </section>
 
-        <!-- ═══════ STEP 2: SELECT AMOUNT ═══════ -->
-        <section id="stepAmount" class="step hidden">
+        <!-- ═══════ STEP 2: PURPOSE SELECTOR ═══════ -->
+        <section id="stepPurpose" class="step hidden">
             <div class="step-header">
                 <span class="step-badge">2</span>
-                <h2>Payment Amount</h2>
+                <h2>What do you need?</h2>
             </div>
 
-            <!-- Account card (shown if found) -->
+            <!-- Account card -->
             <div id="accountCard" class="account-card hidden">
                 <div class="account-avatar">✅</div>
                 <div class="account-info">
@@ -92,35 +91,86 @@
                 </div>
             </div>
 
-            <p class="step-desc">What type of payment are you making?</p>
+            <div class="purpose-cards">
+                <button class="purpose-card" data-purpose="checkin" id="btnPurposeCheckin">
+                    <div class="purpose-icon">📍</div>
+                    <h3>Check-In Only</h3>
+                    <p>Take a selfie & share your location. No fee required.</p>
+                    <span class="purpose-tag tag-free">Free</span>
+                </button>
 
-            <!-- Payment type selector -->
-            <div class="payment-types">
-                <button class="payment-type active" data-type="checkin">
-                    <span class="pt-icon">📋</span>
-                    <span class="pt-label">Check-In Fee</span>
-                </button>
-                <button class="payment-type" data-type="premium">
-                    <span class="pt-icon">📄</span>
-                    <span class="pt-label">Premium</span>
-                </button>
-                <button class="payment-type" data-type="other">
-                    <span class="pt-icon">💵</span>
-                    <span class="pt-label">Other</span>
+                <button class="purpose-card" data-purpose="payment" id="btnPurposePayment">
+                    <div class="purpose-icon">💳</div>
+                    <h3>Make a Payment</h3>
+                    <p>Pay your premium or installment securely.</p>
+                    <span class="purpose-tag tag-payment">Payment Plan</span>
                 </button>
             </div>
+        </section>
 
-            <!-- Preset amounts for check-in -->
+        <!-- ═══════ STEP 3A: CHECK-IN (selfie + GPS) ═══════ -->
+        <section id="stepCheckin" class="step hidden">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Check-In</h2>
+            </div>
+            <p class="step-desc">Take a quick selfie and share your location to complete your check-in.</p>
+
+            <!-- Selfie Capture -->
+            <div class="checkin-card">
+                <div class="checkin-item">
+                    <div class="checkin-icon">📸</div>
+                    <div class="checkin-info">
+                        <strong>Selfie</strong>
+                        <span id="selfieStatus" class="checkin-status">Tap to take photo</span>
+                    </div>
+                    <div id="selfiePreview" class="selfie-preview hidden">
+                        <img id="selfieImg" alt="Selfie preview">
+                    </div>
+                </div>
+                <input type="file" id="selfieInput" accept="image/*" capture="user" class="hidden-file-input">
+
+                <div class="checkin-divider"></div>
+
+                <!-- Location -->
+                <div class="checkin-item" id="locationItem">
+                    <div class="checkin-icon">📍</div>
+                    <div class="checkin-info">
+                        <strong>Location</strong>
+                        <span id="locationStatus" class="checkin-status">Tap to share location</span>
+                    </div>
+                    <div id="locationBadge" class="location-badge hidden">
+                        <span class="location-dot"></span> Captured
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnSubmitCheckin" class="shamrock-btn shamrock-btn-primary full-width" disabled>
+                <span class="btn-text">Submit Check-In</span>
+                <span class="btn-loader shamrock-spinner hidden"></span>
+            </button>
+        </section>
+
+        <!-- ═══════ STEP 3B: PAYMENT AMOUNT ═══════ -->
+        <section id="stepAmount" class="step hidden">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Payment Amount</h2>
+            </div>
+
+            <p class="step-desc">Select your payment amount below.</p>
+
+            <!-- Preset amounts -->
             <div id="presetAmounts" class="preset-grid">
-                <button class="preset-btn active" data-amount="25">$25</button>
-                <button class="preset-btn" data-amount="35">$35</button>
-                <button class="preset-btn" data-amount="50">$50</button>
-                <button class="preset-btn" data-amount="75">$75</button>
+                <button class="preset-btn active" data-amount="50">$50</button>
+                <button class="preset-btn" data-amount="100">$100</button>
+                <button class="preset-btn" data-amount="200">$200</button>
+                <button class="preset-btn" data-amount="250">$250</button>
             </div>
 
             <!-- Custom amount -->
-            <div id="customAmountWrap" class="form-group hidden">
-                <label for="customAmount">Enter Amount</label>
+            <div class="form-group" id="customAmountWrap">
+                <label for="customAmount">Or enter a custom amount</label>
                 <div class="input-icon-wrap">
                     <span class="input-icon">$</span>
                     <input type="number" id="customAmount" placeholder="0.00" inputmode="decimal" min="1" step="0.01">
@@ -130,7 +180,7 @@
             <!-- Selected amount display -->
             <div class="amount-display">
                 <span class="amount-label">Payment Amount</span>
-                <span class="amount-value" id="selectedAmount">$25.00</span>
+                <span class="amount-value" id="selectedAmount">$50.00</span>
             </div>
 
             <button id="btnContinue" class="shamrock-btn shamrock-btn-primary full-width">
@@ -138,18 +188,14 @@
             </button>
         </section>
 
-        <!-- ═══════ STEP 3: PAY ═══════ -->
+        <!-- ═══════ STEP 4: PAY ═══════ -->
         <section id="stepPay" class="step hidden">
             <div class="step-header">
-                <span class="step-badge">3</span>
+                <span class="step-badge">4</span>
                 <h2>Complete Payment</h2>
             </div>
 
             <div class="payment-summary shamrock-card">
-                <div class="summary-row">
-                    <span>Payment Type</span>
-                    <span id="summaryType" class="summary-val">Check-In Fee</span>
-                </div>
                 <div class="summary-row">
                     <span>Name</span>
                     <span id="summaryName" class="summary-val">—</span>
@@ -161,13 +207,13 @@
                 <div class="summary-divider"></div>
                 <div class="summary-row summary-total">
                     <span>Total</span>
-                    <span id="summaryTotal" class="summary-val">$25.00</span>
+                    <span id="summaryTotal" class="summary-val">$50.00</span>
                 </div>
             </div>
 
             <a id="payNowBtn" href="#" target="_blank" class="shamrock-btn shamrock-btn-primary full-width pay-now-btn">
                 <span class="pay-icon">🔒</span>
-                Pay Now — <span id="payBtnAmount">$25.00</span>
+                Pay Now — <span id="payBtnAmount">$50.00</span>
             </a>
 
             <p class="secure-note">
@@ -179,8 +225,8 @@
                 <a href="tel:+12393322245" class="alt-btn">
                     <span>📞</span> Pay by Phone
                 </a>
-                <button id="btnVenmo" class="alt-btn">
-                    <span>💜</span> Venmo / Zelle
+                <button id="btnCashApp" class="alt-btn alt-btn-cashapp">
+                    <span>💚</span> CashApp
                 </button>
             </div>
         </section>
@@ -194,9 +240,8 @@
                         <path fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" class="checkmark-check" />
                     </svg>
                 </div>
-                <h2>Payment Submitted!</h2>
-                <p class="success-msg">Thank you. If you completed the payment on the SwipeSimple page, you'll receive a
-                    receipt shortly.</p>
+                <h2 id="successTitle">Submitted!</h2>
+                <p class="success-msg" id="successMsg">Thank you. Your submission has been received.</p>
 
                 <div class="success-ref shamrock-card">
                     <span class="ref-label">Reference</span>
@@ -204,8 +249,8 @@
                 </div>
 
                 <div class="success-actions">
-                    <button id="btnNewPayment" class="shamrock-btn shamrock-btn-outline full-width">
-                        Make Another Payment
+                    <button id="btnStartOver" class="shamrock-btn shamrock-btn-outline full-width">
+                        Start Over
                     </button>
                     <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary full-width">
                         📞 Call Shamrock
@@ -214,29 +259,22 @@
             </div>
         </section>
 
-        <!-- ═══════ VENMO/ZELLE MODAL ═══════ -->
-        <div id="venmoModal" class="modal hidden">
+        <!-- ═══════ CASHAPP MODAL ═══════ -->
+        <div id="cashAppModal" class="modal hidden">
             <div class="modal-backdrop"></div>
             <div class="modal-content shamrock-card">
-                <button class="modal-close" id="closeVenmo">✕</button>
-                <h3>Pay via Venmo or Zelle</h3>
+                <button class="modal-close" id="closeCashApp">✕</button>
+                <h3>Pay via CashApp</h3>
                 <p>Send your payment to:</p>
-                <div class="pay-method">
-                    <span class="pay-method-icon">💜</span>
-                    <div>
-                        <strong>Venmo</strong>
-                        <span class="pay-handle">@ShamrockBailBonds</span>
-                    </div>
-                </div>
-                <div class="pay-method">
+                <div class="pay-method cashapp-method">
                     <span class="pay-method-icon">💚</span>
                     <div>
-                        <strong>Zelle</strong>
-                        <span class="pay-handle">payments@shamrockbailbonds.biz</span>
+                        <strong>CashApp</strong>
+                        <span class="pay-handle cashapp-handle">$Shamrock2245</span>
                     </div>
                 </div>
                 <p class="modal-note">Include your <strong>full name</strong> and <strong>case/bond number</strong> in
-                    the memo.</p>
+                    the memo so we can match your payment.</p>
             </div>
         </div>
     </div>
