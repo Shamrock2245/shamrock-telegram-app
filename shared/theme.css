@@ -198,10 +198,10 @@ body {
 /* ── Brand Logo ── */
 .brand-logo {
     display: inline-block;
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px;
-    min-height: 32px;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px;
+    min-height: 44px;
     object-fit: contain;
     vertical-align: middle;
     filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
