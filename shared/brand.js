@@ -29,14 +29,8 @@ function initTelegram() {
 
 function initTheme() {
     const saved = localStorage.getItem('shamrock-theme');
-    if (saved) {
-        document.documentElement.setAttribute('data-theme', saved);
-    } else if (tg?.colorScheme === 'light') {
-        // Only override to light if Telegram explicitly says light AND user chose it
-        // We default to dark for the premium look
-    }
-    // Default is always dark (no attribute needed, CSS :root vars are dark)
-    // Users can toggle to light mode manually via the theme toggle button
+    const theme = saved || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
 }
 
 function toggleTheme() {

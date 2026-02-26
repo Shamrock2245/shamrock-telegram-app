@@ -7,7 +7,7 @@
     <title>Shamrock Bail Bonds</title>
     <script>
         // Instant dark mode — prevents flash of light theme
-        (function () { var t = localStorage.getItem('shamrock-theme'); if (t === 'light') document.documentElement.setAttribute('data-theme', 'light') })();
+        (function () { var t = localStorage.getItem('shamrock-theme'); document.documentElement.setAttribute('data-theme', t || 'dark') })();
     </script>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="shared/theme.css">
