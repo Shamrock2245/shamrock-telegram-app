@@ -44,3 +44,8 @@
   from = "/status/*"
   to = "/status/index.html"
   status = 200
+
+[[redirects]]
+  from = "/updates/*"
+  to = "/updates/index.html"
+  status = 200

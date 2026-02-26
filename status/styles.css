@@ -1,0 +1,412 @@
+/* ═══════════════════════════════════════════════════════════════
+   Shamrock — My Case Status Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.app-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--space-md);
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+}
+
+/* ── Header ── */
+.app-header {
+    margin-bottom: var(--space-lg);
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.brand-icon {
+    font-size: 1.8rem;
+}
+
+.brand h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand-sub {
+    font-size: 0.75rem;
+    color: var(--shamrock-emerald);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.theme-toggle {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all var(--transition-base);
+}
+
+.theme-toggle:hover {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* ── Steps ── */
+.step {
+    animation: fadeIn 0.3s ease;
+}
+
+.step.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: var(--shamrock-emerald);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.step-header h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.step-desc {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-bottom: var(--space-lg);
+    line-height: 1.5;
+}
+
+/* ── Form ── */
+.form-group {
+    margin-bottom: var(--space-md);
+}
+
+.form-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.shamrock-input {
+    width: 100%;
+    padding: 14px 14px 14px 42px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    transition: all var(--transition-base);
+}
+
+.shamrock-input:focus {
+    outline: none;
+    border-color: var(--shamrock-emerald);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.shamrock-input::placeholder {
+    color: var(--text-muted);
+}
+
+.full-width {
+    width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ── Account Badge ── */
+.account-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.account-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--shamrock-emerald), var(--shamrock-emerald-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.account-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.account-name {
+    font-weight: 600;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.account-phone {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.account-status {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.account-status.active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--shamrock-emerald);
+}
+
+/* ── Dashboard Cards ── */
+.dashboard-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-icon {
+    font-size: 1.2rem;
+}
+
+.card-header h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* ── Info Rows ── */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.info-row:last-of-type {
+    border-bottom: none;
+}
+
+.info-row.highlight {
+    background: rgba(16, 185, 129, 0.06);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.info-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: right;
+    max-width: 60%;
+}
+
+.info-value.accent {
+    color: var(--shamrock-gold);
+}
+
+.info-value.mono {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+
+/* ── Document List ── */
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.doc-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 10px 12px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition-base);
+}
+
+.doc-item:hover {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: var(--shamrock-emerald);
+}
+
+.doc-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.doc-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-arrow {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* ── Card Empty State ── */
+.card-empty {
+    text-align: center;
+    padding: var(--space-md);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* ── Actions Bar ── */
+.actions-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-bottom: var(--space-xl);
+}
+
+.btn-sm {
+    padding: 12px var(--space-md) !important;
+    font-size: 0.9rem !important;
+    min-height: 44px !important;
+}
+
+/* ── Empty State (Not Found) ── */
+.empty-state {
+    text-align: center;
+    padding: var(--space-2xl) var(--space-md);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+}
+
+.empty-state h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: var(--space-lg);
+}
+
+.empty-state .shamrock-btn {
+    margin-bottom: var(--space-sm);
+}
+
+/* ── Light theme adjustments ── */
+[data-theme="light"] .info-row.highlight {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+[data-theme="light"] .info-row {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}

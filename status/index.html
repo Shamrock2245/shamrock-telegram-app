@@ -5,54 +5,199 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Case Status — Shamrock Bail Bonds</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="../shared/theme.css">
-    <style>
-        .coming-soon {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: var(--space-xl);
-            text-align: center;
-        }
-
-        .coming-soon .icon {
-            font-size: 4rem;
-            margin-bottom: var(--space-lg);
-        }
-
-        .coming-soon h1 {
-            font-size: 1.5rem;
-            margin-bottom: var(--space-sm);
-        }
-
-        .coming-soon p {
-            color: var(--text-secondary);
-            max-width: 320px;
-            margin-bottom: var(--space-xl);
-            line-height: 1.6;
-        }
-
-        .coming-soon a {
-            color: var(--shamrock-emerald);
-            text-decoration: none;
-            font-weight: 600;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
     <div class="shamrock-ambient"></div>
-    <div class="coming-soon">
-        <div class="icon">📊</div>
-        <h1>My Case Status</h1>
-        <p>Case tracking and court date reminders are coming soon. Need an update now? Call us directly.</p>
-        <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary">📞 Call (239) 332-2245</a>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-row">
+                <div class="brand">
+                    <span class="brand-icon">🍀</span>
+                    <div>
+                        <h1>Shamrock</h1>
+                        <span class="brand-sub">My Case Status</span>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- STEP 1: IDENTITY -->
+        <section class="step active" id="stepIdentify">
+            <div class="step-header">
+                <span class="step-badge">1</span>
+                <h2>Look Up Your Case</h2>
+            </div>
+            <p class="step-desc">Enter the phone number on file with Shamrock to view your case details.</p>
+
+            <div class="form-group">
+                <label class="form-label">PHONE NUMBER</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📱</span>
+                    <input type="tel" id="lookupPhone" class="shamrock-input" placeholder="(239) 555-1234"
+                        autocomplete="tel">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">YOUR FULL NAME</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="lookupName" class="shamrock-input" placeholder="John Smith"
+                        autocomplete="name">
+                </div>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnLookup" disabled>
+                <span class="btn-text">View My Case</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 2: CASE DASHBOARD -->
+        <section class="step hidden" id="stepDashboard">
+            <!-- Account badge -->
+            <div class="account-badge" id="accountBadge">
+                <div class="account-avatar">👤</div>
+                <div class="account-info">
+                    <span class="account-name" id="accountName"></span>
+                    <span class="account-phone" id="accountPhone"></span>
+                </div>
+                <span class="account-status active">Active</span>
+            </div>
+
+            <!-- Court Dates -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <span class="card-icon">⚖️</span>
+                    <h3>Court Dates</h3>
+                </div>
+                <div id="courtDatesContent">
+                    <div class="info-row highlight">
+                        <span class="info-label">Next Appearance</span>
+                        <span class="info-value" id="nextCourtDate">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Courtroom</span>
+                        <span class="info-value" id="courtroom">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Judge</span>
+                        <span class="info-value" id="judge">—</span>
+                    </div>
+                </div>
+                <div class="card-empty hidden" id="noCourtDates">
+                    <p>No upcoming court dates on file.</p>
+                </div>
+            </div>
+
+            <!-- Payment Schedule -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <span class="card-icon">💰</span>
+                    <h3>Payment Schedule</h3>
+                </div>
+                <div id="paymentContent">
+                    <div class="info-row highlight">
+                        <span class="info-label">Next Payment Due</span>
+                        <span class="info-value" id="nextPaymentDate">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Amount Due</span>
+                        <span class="info-value accent" id="amountDue">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Remaining Balance</span>
+                        <span class="info-value" id="remainingBalance">—</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Payment</span>
+                        <span class="info-value" id="lastPayment">—</span>
+                    </div>
+                </div>
+                <a href="../payment/" class="shamrock-btn shamrock-btn-outline full-width btn-sm" id="btnMakePayment">
+                    💳 Make a Payment
+                </a>
+            </div>
+
+            <!-- Case Summary -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <span class="card-icon">📋</span>
+                    <h3>Case Summary</h3>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Bond Amount</span>
+                    <span class="info-value" id="bondAmount">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Charges</span>
+                    <span class="info-value" id="charges">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Posting Date</span>
+                    <span class="info-value" id="postingDate">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Case Number</span>
+                    <span class="info-value mono" id="caseNumber">—</span>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <span class="card-icon">📄</span>
+                    <h3>Documents</h3>
+                </div>
+                <div id="docsContent">
+                    <div class="doc-list" id="docList">
+                        <!-- Docs injected by JS -->
+                    </div>
+                </div>
+                <div class="card-empty hidden" id="noDocs">
+                    <p>No documents on file yet.</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions-bar">
+                <a href="../updates/" class="shamrock-btn shamrock-btn-outline full-width btn-sm">
+                    📝 Update My Info
+                </a>
+                <button class="shamrock-btn shamrock-btn-primary full-width btn-sm" id="btnRefresh">
+                    🔄 Refresh
+                </button>
+            </div>
+        </section>
+
+        <!-- NOT FOUND -->
+        <section class="step hidden" id="stepNotFound">
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No Case Found</h3>
+                <p>We couldn't find an active case with that information. Please double-check your phone number and
+                    name, or contact us directly.</p>
+                <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary full-width">
+                    📞 Call (239) 332-2245
+                </a>
+                <button class="shamrock-btn shamrock-btn-outline full-width" id="btnTryAgain">
+                    Try Again
+                </button>
+            </div>
+        </section>
     </div>
+
     <script src="../shared/brand.js"></script>
-    <script>initTheme(); initTelegram();</script>
+    <script src="app.js"></script>
 </body>
 
 </html>

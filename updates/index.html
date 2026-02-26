@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Update My Info — Shamrock Bail Bonds</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+    <div class="shamrock-ambient"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-row">
+                <div class="brand">
+                    <span class="brand-icon">🍀</span>
+                    <div>
+                        <h1>Shamrock</h1>
+                        <span class="brand-sub">Update My Info</span>
+                    </div>
+                </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- STEP 1: IDENTITY (skipped for anonymous tips) -->
+        <section class="step active" id="stepIdentify">
+            <div class="step-header">
+                <span class="step-badge">1</span>
+                <h2>Verify Your Identity</h2>
+            </div>
+            <p class="step-desc">Enter your information so we can match you to your case.</p>
+
+            <div class="form-group">
+                <label class="form-label">PHONE NUMBER</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📱</span>
+                    <input type="tel" id="lookupPhone" class="shamrock-input" placeholder="(239) 555-1234"
+                        autocomplete="tel">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">YOUR FULL NAME</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="lookupName" class="shamrock-input" placeholder="John Smith"
+                        autocomplete="name">
+                </div>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnContinueIdentity" disabled>
+                <span class="btn-text">Continue</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+
+            <div class="anonymous-divider">
+                <span>or</span>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-anonymous full-width" id="btnAnonymous">
+                🕵️ Submit an Anonymous Tip
+            </button>
+        </section>
+
+        <!-- STEP 2: UPDATE TYPE (non-anonymous) -->
+        <section class="step hidden" id="stepType">
+            <div class="step-header">
+                <span class="step-badge">2</span>
+                <h2>What do you need to update?</h2>
+            </div>
+
+            <!-- Account badge -->
+            <div class="account-badge" id="accountBadge">
+                <div class="account-avatar">👤</div>
+                <div class="account-info">
+                    <span class="account-name" id="accountName"></span>
+                    <span class="account-phone" id="accountPhone"></span>
+                </div>
+            </div>
+
+            <div class="type-grid">
+                <button class="type-card" data-type="contact">
+                    <span class="type-icon">📱</span>
+                    <h3>Contact Info</h3>
+                    <p>New phone, email</p>
+                </button>
+
+                <button class="type-card" data-type="address">
+                    <span class="type-icon">🏠</span>
+                    <h3>Address</h3>
+                    <p>Moved, new location</p>
+                </button>
+
+                <button class="type-card" data-type="extension">
+                    <span class="type-icon">💳</span>
+                    <h3>Payment Extension</h3>
+                    <p>Request more time</p>
+                </button>
+
+                <button class="type-card" data-type="circumstances">
+                    <span class="type-icon">📝</span>
+                    <h3>Circumstances</h3>
+                    <p>Job, life changes</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 3A: CONTACT INFO FORM -->
+        <section class="step hidden" id="stepContact">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Update Contact Info</h2>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NEW PHONE NUMBER</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📱</span>
+                    <input type="tel" id="newPhone" class="shamrock-input" placeholder="(239) 555-0000">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NEW EMAIL ADDRESS</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">✉️</span>
+                    <input type="email" id="newEmail" class="shamrock-input" placeholder="email@example.com">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">ADDITIONAL NOTES (OPTIONAL)</label>
+                <textarea id="contactNotes" class="shamrock-input shamrock-textarea" placeholder="Any other details…"
+                    rows="3"></textarea>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnSubmitContact">
+                <span class="btn-text">Submit Update</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 3B: ADDRESS FORM -->
+        <section class="step hidden" id="stepAddress">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Update Address / Whereabouts</h2>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">NEW ADDRESS</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🏠</span>
+                    <input type="text" id="newAddress" class="shamrock-input" placeholder="123 Main St, Apt 4">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label class="form-label">CITY</label>
+                    <input type="text" id="newCity" class="shamrock-input" placeholder="Fort Myers">
+                </div>
+                <div class="form-group flex-half">
+                    <label class="form-label">STATE</label>
+                    <input type="text" id="newState" class="shamrock-input" placeholder="FL" maxlength="2">
+                </div>
+                <div class="form-group flex-half">
+                    <label class="form-label">ZIP</label>
+                    <input type="text" id="newZip" class="shamrock-input" placeholder="33901" maxlength="5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">REASON FOR MOVE (OPTIONAL)</label>
+                <textarea id="addressNotes" class="shamrock-input shamrock-textarea"
+                    placeholder="e.g., Relocating for work…" rows="3"></textarea>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnSubmitAddress">
+                <span class="btn-text">Submit Update</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 3C: PAYMENT EXTENSION -->
+        <section class="step hidden" id="stepExtension">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Request Payment Extension</h2>
+            </div>
+            <p class="step-desc">Let us know when you'd be able to make your next payment.</p>
+
+            <div class="form-group">
+                <label class="form-label">REQUESTED NEW DUE DATE</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📅</span>
+                    <input type="date" id="requestedDate" class="shamrock-input">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">REASON FOR EXTENSION</label>
+                <textarea id="extensionReason" class="shamrock-input shamrock-textarea"
+                    placeholder="e.g., Waiting on paycheck, unexpected expense…" rows="4"></textarea>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnSubmitExtension">
+                <span class="btn-text">Submit Request</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 3D: CIRCUMSTANCES -->
+        <section class="step hidden" id="stepCircumstances">
+            <div class="step-header">
+                <span class="step-badge">3</span>
+                <h2>Update Circumstances</h2>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">WHAT'S CHANGED?</label>
+                <textarea id="circumstancesText" class="shamrock-input shamrock-textarea"
+                    placeholder="Job change, new employer, family situation, legal updates, travel plans, etc."
+                    rows="5"></textarea>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary full-width" id="btnSubmitCircumstances">
+                <span class="btn-text">Submit Update</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 3E: ANONYMOUS TIP -->
+        <section class="step hidden" id="stepTip">
+            <div class="step-header">
+                <span class="step-badge tip-badge">🕵️</span>
+                <h2>Anonymous Tip</h2>
+            </div>
+            <p class="step-desc">This tip is <strong>100% anonymous</strong>. No name, phone, or identity is recorded.
+                Help us protect our business from potential losses.</p>
+
+            <div class="form-group">
+                <label class="form-label">DEFENDANT'S NAME (who you're reporting)</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="tipDefendantName" class="shamrock-input" placeholder="Defendant's full name">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">YOUR TIP</label>
+                <textarea id="tipText" class="shamrock-input shamrock-textarea"
+                    placeholder="What information should we know? e.g., Planning to leave the state, skipping court, living at a different address than reported…"
+                    rows="5"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">ADDITIONAL DETAILS (OPTIONAL)</label>
+                <textarea id="tipDetails" class="shamrock-input shamrock-textarea"
+                    placeholder="Known locations, vehicle, associates, dates…" rows="3"></textarea>
+            </div>
+
+            <div class="anonymous-notice">
+                <span class="notice-icon">🔒</span>
+                <p>Your identity is not recorded. No IP address, phone number, or name is logged with this submission.
+                </p>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-warning full-width" id="btnSubmitTip">
+                <span class="btn-text">Submit Anonymous Tip</span>
+                <span class="btn-loader hidden"><span class="shamrock-spinner"></span></span>
+            </button>
+        </section>
+
+        <!-- STEP 4: SUCCESS -->
+        <section class="step hidden" id="stepSuccess">
+            <div class="success-state">
+                <div class="success-icon">✅</div>
+                <h3 id="successTitle">Update Submitted!</h3>
+                <p id="successMsg">Your update has been received. Our team will review it shortly.</p>
+                <div class="ref-badge">
+                    <span class="ref-label">Reference ID</span>
+                    <span class="ref-value" id="refId"></span>
+                </div>
+                <button class="shamrock-btn shamrock-btn-outline full-width" id="btnDone">
+                    Done
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <script src="../shared/brand.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
