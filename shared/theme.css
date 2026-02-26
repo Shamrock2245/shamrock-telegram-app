@@ -176,3 +176,17 @@ body {
 
 /* ── Google Fonts Import ── */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Brand Logo ── */
+.brand-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+}
+
+.brand-logo-lg {
+    width: 64px;
+    height: 64px;
+}

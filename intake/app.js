@@ -31,8 +31,7 @@ const CONFIG = {
 
 function initTheme() {
     const saved = localStorage.getItem('shamrock-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (prefersDark ? 'dark' : 'light');
+    const theme = saved || 'dark';
     document.documentElement.setAttribute('data-theme', theme);
 }
 

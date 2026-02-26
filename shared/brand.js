@@ -33,10 +33,9 @@ function initTheme() {
         document.documentElement.setAttribute('data-theme', saved);
     } else if (tg?.colorScheme) {
         document.documentElement.setAttribute('data-theme', tg.colorScheme);
-    } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-        document.documentElement.setAttribute('data-theme', 'light');
     }
-    // Default is dark (no attribute needed, CSS defaults to dark)
+    // Default is always dark (no attribute needed, CSS :root vars are dark)
+    // Users can toggle to light mode manually via the theme toggle button
 }
 
 function toggleTheme() {
