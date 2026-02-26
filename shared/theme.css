@@ -179,14 +179,19 @@ body {
 
 /* ── Brand Logo ── */
 .brand-logo {
-    width: 32px;
-    height: 32px;
+    display: inline-block;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px;
+    min-height: 32px;
     object-fit: contain;
     vertical-align: middle;
     filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
 }
 
 .brand-logo-lg {
-    width: 64px;
-    height: 64px;
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px;
+    min-height: 64px;
 }
