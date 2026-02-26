@@ -11,6 +11,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <!-- Shared Design System -->
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css">
     <!-- Payment-specific styles -->
     <link rel="stylesheet" href="styles.css">
@@ -24,14 +25,14 @@
         <header class="app-header">
             <div class="header-row">
                 <div class="header-brand">
-                    <span class="logo">🍀</span>
+                    <span class="logo"><i class="ph ph-clover"></i></span>
                     <div>
                         <h1>Shamrock</h1>
                         <p class="tagline">Check-In & Payments</p>
                     </div>
                 </div>
                 <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
-                    <span class="theme-icon">🌙</span>
+                    <span class="theme-icon"><i class="ph ph-moon"></i></span>
                 </button>
             </div>
         </header>
@@ -47,7 +48,7 @@
             <div class="form-group">
                 <label for="lookupPhone">Phone Number</label>
                 <div class="input-icon-wrap">
-                    <span class="input-icon">📱</span>
+                    <span class="input-icon"><i class="ph ph-device-mobile"></i></span>
                     <input type="tel" id="lookupPhone" placeholder="(239) 555-1234" inputmode="tel" autocomplete="tel"
                         maxlength="14">
                 </div>
@@ -56,7 +57,7 @@
             <div class="form-group">
                 <label for="lookupName">Your Full Name</label>
                 <div class="input-icon-wrap">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon"><i class="ph ph-user"></i></span>
                     <input type="text" id="lookupName" placeholder="John Smith" autocomplete="name">
                 </div>
             </div>
@@ -67,7 +68,7 @@
             </button>
 
             <div id="notFoundMsg" class="alert alert-warn hidden">
-                <span>⚠️</span>
+                <span><i class="ph ph-warning"></i></span>
                 <div>
                     <strong>Account not found</strong>
                     <p>Don't worry — you can still proceed. We'll match it to your account.</p>
@@ -84,7 +85,7 @@
 
             <!-- Account card -->
             <div id="accountCard" class="account-card hidden">
-                <div class="account-avatar">✅</div>
+                <div class="account-avatar"><i class="ph ph-check-circle"></i></div>
                 <div class="account-info">
                     <span class="account-name" id="accountName"></span>
                     <span class="account-detail" id="accountDetail"></span>
@@ -93,14 +94,14 @@
 
             <div class="purpose-cards">
                 <button class="purpose-card" data-purpose="checkin" id="btnPurposeCheckin">
-                    <div class="purpose-icon">📍</div>
+                    <div class="purpose-icon"><i class="ph ph-map-pin"></i></div>
                     <h3>Check-In Only</h3>
                     <p>Take a selfie & share your location. No fee required.</p>
                     <span class="purpose-tag tag-free">Free</span>
                 </button>
 
                 <button class="purpose-card" data-purpose="payment" id="btnPurposePayment">
-                    <div class="purpose-icon">💳</div>
+                    <div class="purpose-icon"><i class="ph ph-wallet"></i></div>
                     <h3>Make a Payment</h3>
                     <p>Pay your premium or installment securely.</p>
                     <span class="purpose-tag tag-payment">Payment Plan</span>
@@ -119,7 +120,7 @@
             <!-- Selfie Capture -->
             <div class="checkin-card">
                 <div class="checkin-item">
-                    <div class="checkin-icon">📸</div>
+                    <div class="checkin-icon"><i class="ph ph-camera"></i></div>
                     <div class="checkin-info">
                         <strong>Selfie</strong>
                         <span id="selfieStatus" class="checkin-status">Tap to take photo</span>
@@ -134,7 +135,7 @@
 
                 <!-- Location -->
                 <div class="checkin-item" id="locationItem">
-                    <div class="checkin-icon">📍</div>
+                    <div class="checkin-icon"><i class="ph ph-map-pin"></i></div>
                     <div class="checkin-info">
                         <strong>Location</strong>
                         <span id="locationStatus" class="checkin-status">Tap to share location</span>
@@ -212,21 +213,22 @@
             </div>
 
             <a id="payNowBtn" href="#" target="_blank" class="shamrock-btn shamrock-btn-primary full-width pay-now-btn">
-                <span class="pay-icon">🔒</span>
+                <span class="pay-icon"><i class="ph ph-lock-simple"></i></span>
                 Pay Now — <span id="payBtnAmount">$50.00</span>
             </a>
 
             <p class="secure-note">
-                <span>🛡️</span> Payments processed securely by SwipeSimple. Your card info never touches our servers.
+                <span><i class="ph ph-shield-check"></i></span> Payments processed securely by SwipeSimple. Your card
+                info never touches our servers.
             </p>
 
             <div class="alt-methods">
                 <p class="alt-title">Other Ways to Pay</p>
                 <a href="tel:+12393322245" class="alt-btn">
-                    <span>📞</span> Pay by Phone
+                    <span><i class="ph ph-phone"></i></span> Pay by Phone
                 </a>
                 <button id="btnCashApp" class="alt-btn alt-btn-cashapp">
-                    <span>💚</span> CashApp
+                    <span><i class="ph ph-currency-circle-dollar"></i></span> CashApp
                 </button>
             </div>
         </section>
@@ -253,7 +255,7 @@
                         Start Over
                     </button>
                     <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary full-width">
-                        📞 Call Shamrock
+                        <i class="ph ph-phone"></i> Call Shamrock
                     </a>
                 </div>
             </div>
@@ -267,7 +269,7 @@
                 <h3>Pay via CashApp</h3>
                 <p>Send your payment to:</p>
                 <div class="pay-method cashapp-method">
-                    <span class="pay-method-icon">💚</span>
+                    <span class="pay-method-icon"><i class="ph ph-currency-circle-dollar"></i></span>
                     <div>
                         <strong>CashApp</strong>
                         <span class="pay-handle cashapp-handle">$Shamrock2245</span>

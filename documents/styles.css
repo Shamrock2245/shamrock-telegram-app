@@ -1,0 +1,509 @@
+/* ═══════════════════════════════════════════════════════════════
+   Shamrock Bail Bonds — Document Review & Sign
+   styles.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Layout ── */
+.container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--space-md);
+    padding-bottom: 100px;
+}
+
+/* ── Header ── */
+.app-header {
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-header .logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.back-link {
+    color: var(--shamrock-emerald);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.logo-text h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.logo-text .tagline {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ── Lookup Hero ── */
+.lookup-hero {
+    text-align: center;
+    padding: var(--space-2xl) 0 var(--space-lg);
+}
+
+.hero-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.lookup-hero h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+}
+
+.lookup-hero p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* ── Forms ── */
+.lookup-form {
+    margin-top: var(--space-md);
+}
+
+.form-group {
+    margin-bottom: var(--space-md);
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+    color: var(--text-secondary);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px var(--space-md);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    transition: border-color var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-full {
+    width: 100%;
+    margin-top: var(--space-sm);
+}
+
+.btn-text,
+.btn-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.lookup-error {
+    margin-top: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-sm);
+    color: #EF4444;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* ── Case Header ── */
+.case-header {
+    margin-bottom: var(--space-md);
+}
+
+.case-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.case-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.case-number {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--shamrock-emerald);
+}
+
+.case-parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.party {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.party-role {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.party-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* ── Progress ── */
+.packet-progress {
+    margin-bottom: var(--space-lg);
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.progress-percent {
+    font-weight: 600;
+    color: var(--shamrock-emerald);
+}
+
+.progress-bar-container {
+    height: 6px;
+    background: var(--input-bg);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--shamrock-emerald), var(--shamrock-emerald-light));
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+/* ── Document List ── */
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    cursor: pointer;
+}
+
+.doc-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: var(--shadow-sm);
+}
+
+.doc-card.signed {
+    border-left: 3px solid var(--shamrock-emerald);
+}
+
+.doc-card.pending {
+    border-left: 3px solid var(--shamrock-gold);
+}
+
+.doc-card.readonly {
+    border-left: 3px solid var(--text-muted);
+    opacity: 0.8;
+}
+
+.doc-card.waiting {
+    border-left: 3px solid #6366F1;
+    opacity: 0.7;
+}
+
+.doc-num {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: var(--bg-glass);
+    color: var(--text-secondary);
+}
+
+.doc-card.signed .doc-num {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--shamrock-emerald);
+}
+
+.doc-card.pending .doc-num {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--shamrock-gold);
+}
+
+.doc-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.doc-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.doc-status {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.status-signed {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--shamrock-emerald);
+}
+
+.status-sign {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--shamrock-gold);
+}
+
+.status-readonly {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-muted);
+}
+
+.status-waiting {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818CF8;
+}
+
+/* ── Doc Expanded View ── */
+.doc-expanded {
+    display: none;
+    padding: var(--space-md);
+    background: var(--bg-glass);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--space-sm);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.doc-expanded.active {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.doc-expanded .sign-btn {
+    width: 100%;
+    margin-top: var(--space-md);
+}
+
+.doc-expanded .doc-detail {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--space-sm);
+}
+
+.doc-expanded .signer-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+}
+
+.signer-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--shamrock-emerald);
+}
+
+/* ── Upload Section ── */
+.upload-section {
+    margin-bottom: var(--space-lg);
+}
+
+.upload-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+}
+
+.upload-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+    line-height: 1.5;
+}
+
+.file-upload {
+    position: relative;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.file-upload:hover {
+    border-color: var(--shamrock-emerald);
+    background: rgba(16, 185, 129, 0.03);
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.upload-icon {
+    font-size: 1.5rem;
+}
+
+.upload-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.upload-list {
+    margin-top: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.upload-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.upload-item .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-item .file-status {
+    color: var(--shamrock-emerald);
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* ── Help Bar ── */
+.help-bar {
+    text-align: center;
+    padding: var(--space-md);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.help-bar a {
+    color: var(--shamrock-emerald);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ── Utilities ── */
+.hidden {
+    display: none !important;
+}

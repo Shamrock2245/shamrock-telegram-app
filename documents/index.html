@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shamrock Bail Bonds — Review & Sign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HEADER                                             -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <header class="app-header">
+        <div class="logo">
+            <a href="../" class="back-link"><i class="ph ph-arrow-left"></i> Back</a>
+            <div class="logo-text">
+                <h1><i class="ph ph-file-magnifying-glass"></i> Review & Sign</h1>
+                <p class="tagline">Your bail paperwork packet</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- CASE LOOKUP SCREEN                                 -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <main class="container" id="lookupScreen">
+        <div class="lookup-hero">
+            <div class="hero-icon"><i class="ph ph-files"></i></div>
+            <h2>Find Your Paperwork</h2>
+            <p>Enter the case number you received after your intake was submitted.</p>
+        </div>
+
+        <div class="lookup-form shamrock-card">
+            <div class="form-group">
+                <label for="caseNumberInput">Case Number</label>
+                <input type="text" id="caseNumberInput" placeholder="e.g. SBB-2026-0042" autocomplete="off"
+                    autocapitalize="characters">
+            </div>
+            <div class="form-group">
+                <label for="phoneInput">Or Phone Number</label>
+                <input type="tel" id="phoneInput" placeholder="(555) 123-4567">
+            </div>
+            <button class="shamrock-btn shamrock-btn-primary btn-full" id="lookupBtn" onclick="lookupDocuments()">
+                <span class="btn-text">Find My Documents</span>
+                <span class="btn-loader hidden" id="lookupLoader"><span class="shamrock-spinner"></span></span>
+            </button>
+            <div class="lookup-error hidden" id="lookupError"></div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DOCUMENT PACKET VIEW                               -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <main class="container hidden" id="packetScreen">
+
+        <!-- Case header -->
+        <div class="case-header shamrock-card">
+            <div class="case-meta">
+                <span class="case-label">Case</span>
+                <span class="case-number" id="caseDisplay">—</span>
+            </div>
+            <div class="case-parties">
+                <div class="party">
+                    <span class="party-role">Defendant</span>
+                    <span class="party-name" id="defendantName">—</span>
+                </div>
+                <div class="party">
+                    <span class="party-role">Indemnitor</span>
+                    <span class="party-name" id="indemnitorName">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="packet-progress">
+            <div class="progress-info">
+                <span id="progressLabel">0 of 0 documents</span>
+                <span class="progress-percent" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="packetProgress" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Document list -->
+        <div class="doc-list" id="docList">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Supporting Documents Upload -->
+        <div class="upload-section shamrock-card" id="uploadSection">
+            <h3><i class="ph ph-paperclip"></i> Supporting Documents</h3>
+            <p class="upload-hint">Optional: Upload pay stubs, utility bills, mortgage statements, or other supporting
+                documents.</p>
+            <div class="file-upload" id="supportUpload">
+                <input type="file" id="supportFile" accept="image/*,.pdf,.doc,.docx" multiple>
+                <div class="file-upload-content">
+                    <i class="ph ph-file-plus" style="font-size:1.5rem;color:var(--text-muted)"></i>
+                    <span class="upload-text">Tap to upload documents</span>
+                </div>
+            </div>
+            <div class="upload-list" id="uploadList"></div>
+        </div>
+
+        <!-- Help -->
+        <div class="help-bar">
+            <p><i class="ph ph-phone"></i> Questions? Call 24/7: <a href="tel:+12393322245">(239) 332-2245</a></p>
+        </div>
+    </main>
+
+    <script src="../shared/brand.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -19,7 +20,7 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <header class="app-header">
         <div class="logo">
-            <span class="logo-icon">🍀</span>
+            <span class="logo-icon"><i class="ph ph-clover"></i></span>
             <div class="logo-text">
                 <h1>Shamrock Bail Bonds</h1>
                 <p class="tagline">Fast. Confidential. Statewide.</p>
@@ -252,7 +253,7 @@
                     <div class="file-upload" id="idFrontUpload">
                         <input type="file" id="idFront" name="idFront" accept="image/*" capture="environment" required>
                         <div class="file-upload-content">
-                            <span class="upload-icon">📷</span>
+                            <span class="upload-icon"><i class="ph ph-camera"></i></span>
                             <span class="upload-text">Tap to take photo or upload</span>
                             <span class="upload-hint">Driver's license, State ID, or Passport</span>
                         </div>
@@ -265,7 +266,7 @@
                     <div class="file-upload" id="idBackUpload">
                         <input type="file" id="idBack" name="idBack" accept="image/*" capture="environment">
                         <div class="file-upload-content">
-                            <span class="upload-icon">📷</span>
+                            <span class="upload-icon"><i class="ph ph-camera"></i></span>
                             <span class="upload-text">Back of ID (optional)</span>
                         </div>
                         <div class="file-preview hidden" id="idBackPreview"></div>
@@ -275,11 +276,11 @@
                 <div class="form-group">
                     <label>Location</label>
                     <button type="button" class="location-btn" id="locationBtn" onclick="captureLocation()">
-                        <span class="loc-icon">📍</span>
+                        <span class="loc-icon"><i class="ph ph-map-pin"></i></span>
                         <span class="loc-text">Share My Location</span>
                     </button>
                     <div class="location-result hidden" id="locationResult">
-                        <span class="loc-check">✅</span>
+                        <span class="loc-check"><i class="ph ph-check-circle"></i></span>
                         <span id="locationDisplay">Location captured</span>
                     </div>
                     <input type="hidden" id="gpsLat" name="gpsLat">
@@ -290,7 +291,7 @@
             <!-- ─── STEP 5: REVIEW & CONSENT ────────────────── -->
             <section class="form-step" data-step="5">
                 <div class="step-header">
-                    <span class="step-icon">✅</span>
+                    <span class="step-icon"><i class="ph ph-check-circle"></i></span>
                     <h2>Review & Submit</h2>
                     <p class="step-description">Please review your information before submitting.</p>
                 </div>
@@ -312,7 +313,8 @@
                 </div>
 
                 <div class="legal-note">
-                    <p>📞 Questions? Call us 24/7 at <a href="tel:+12393322245">(239) 332-2245</a></p>
+                    <p><i class="ph ph-phone"></i> Questions? Call us 24/7 at <a href="tel:+12393322245">(239)
+                            332-2245</a></p>
                 </div>
             </section>
 
@@ -343,7 +345,7 @@
     <div class="success-screen hidden" id="successScreen">
         <div class="success-content">
             <div class="success-animation">
-                <span class="success-icon">🍀</span>
+                <span class="success-icon"><i class="ph ph-clover"></i></span>
             </div>
             <h2>Application Received!</h2>
             <p class="success-ref">Reference: <strong id="successRefId"></strong></p>
@@ -353,7 +355,7 @@
             </p>
             <div class="success-actions">
                 <a href="tel:+12393322245" class="btn btn-call">
-                    📞 Call Us Now
+                    <i class="ph ph-phone"></i> Call Us Now
                 </a>
                 <a href="https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8" class="btn btn-pay"
                     target="_blank">

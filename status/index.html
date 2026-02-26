@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Case Status — Shamrock Bail Bonds</title>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -18,14 +19,14 @@
         <header class="app-header">
             <div class="header-row">
                 <div class="brand">
-                    <span class="brand-icon">🍀</span>
+                    <span class="brand-icon"><i class="ph ph-clover"></i></span>
                     <div>
                         <h1>Shamrock</h1>
                         <span class="brand-sub">My Case Status</span>
                     </div>
                 </div>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <span class="theme-icon">🌙</span>
+                    <span class="theme-icon"><i class="ph ph-moon"></i></span>
                 </button>
             </div>
         </header>
@@ -41,7 +42,7 @@
             <div class="form-group">
                 <label class="form-label">PHONE NUMBER</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">📱</span>
+                    <span class="input-icon"><i class="ph ph-device-mobile"></i></span>
                     <input type="tel" id="lookupPhone" class="shamrock-input" placeholder="(239) 555-1234"
                         autocomplete="tel">
                 </div>
@@ -50,7 +51,7 @@
             <div class="form-group">
                 <label class="form-label">YOUR FULL NAME</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon"><i class="ph ph-user"></i></span>
                     <input type="text" id="lookupName" class="shamrock-input" placeholder="John Smith"
                         autocomplete="name">
                 </div>
@@ -66,7 +67,7 @@
         <section class="step hidden" id="stepDashboard">
             <!-- Account badge -->
             <div class="account-badge" id="accountBadge">
-                <div class="account-avatar">👤</div>
+                <div class="account-avatar"><i class="ph ph-user-circle"></i></div>
                 <div class="account-info">
                     <span class="account-name" id="accountName"></span>
                     <span class="account-phone" id="accountPhone"></span>
@@ -77,7 +78,7 @@
             <!-- Court Dates -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <span class="card-icon">⚖️</span>
+                    <span class="card-icon"><i class="ph ph-scales"></i></span>
                     <h3>Court Dates</h3>
                 </div>
                 <div id="courtDatesContent">
@@ -102,7 +103,7 @@
             <!-- Payment Schedule -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <span class="card-icon">💰</span>
+                    <span class="card-icon"><i class="ph ph-money-wavy"></i></span>
                     <h3>Payment Schedule</h3>
                 </div>
                 <div id="paymentContent">
@@ -124,14 +125,14 @@
                     </div>
                 </div>
                 <a href="../payment/" class="shamrock-btn shamrock-btn-outline full-width btn-sm" id="btnMakePayment">
-                    💳 Make a Payment
+                    <i class="ph ph-wallet"></i> Make a Payment
                 </a>
             </div>
 
             <!-- Case Summary -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <span class="card-icon">📋</span>
+                    <span class="card-icon"><i class="ph ph-clipboard-text"></i></span>
                     <h3>Case Summary</h3>
                 </div>
                 <div class="info-row">
@@ -155,7 +156,7 @@
             <!-- Documents -->
             <div class="dashboard-card">
                 <div class="card-header">
-                    <span class="card-icon">📄</span>
+                    <span class="card-icon"><i class="ph ph-files"></i></span>
                     <h3>Documents</h3>
                 </div>
                 <div id="docsContent">
@@ -171,10 +172,10 @@
             <!-- Actions -->
             <div class="actions-bar">
                 <a href="../updates/" class="shamrock-btn shamrock-btn-outline full-width btn-sm">
-                    📝 Update My Info
+                    <i class="ph ph-pencil-simple"></i> Update My Info
                 </a>
                 <button class="shamrock-btn shamrock-btn-primary full-width btn-sm" id="btnRefresh">
-                    🔄 Refresh
+                    <i class="ph ph-arrows-clockwise"></i> Refresh
                 </button>
             </div>
         </section>
@@ -182,12 +183,12 @@
         <!-- NOT FOUND -->
         <section class="step hidden" id="stepNotFound">
             <div class="empty-state">
-                <div class="empty-icon">🔍</div>
+                <div class="empty-icon"><i class="ph ph-magnifying-glass"></i></div>
                 <h3>No Case Found</h3>
                 <p>We couldn't find an active case with that information. Please double-check your phone number and
                     name, or contact us directly.</p>
                 <a href="tel:+12393322245" class="shamrock-btn shamrock-btn-primary full-width">
-                    📞 Call (239) 332-2245
+                    <i class="ph ph-phone"></i> Call (239) 332-2245
                 </a>
                 <button class="shamrock-btn shamrock-btn-outline full-width" id="btnTryAgain">
                     Try Again

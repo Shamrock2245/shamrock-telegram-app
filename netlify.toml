@@ -49,3 +49,13 @@
   from = "/updates/*"
   to = "/updates/index.html"
   status = 200
+
+[[redirects]]
+  from = "/documents/*"
+  to = "/documents/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/defendant/*"
+  to = "/defendant/index.html"
+  status = 200

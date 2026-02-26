@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Update My Info — Shamrock Bail Bonds</title>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -18,14 +19,14 @@
         <header class="app-header">
             <div class="header-row">
                 <div class="brand">
-                    <span class="brand-icon">🍀</span>
+                    <span class="brand-icon"><i class="ph ph-clover"></i></span>
                     <div>
                         <h1>Shamrock</h1>
                         <span class="brand-sub">Update My Info</span>
                     </div>
                 </div>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <span class="theme-icon">🌙</span>
+                    <span class="theme-icon"><i class="ph ph-moon"></i></span>
                 </button>
             </div>
         </header>
@@ -41,7 +42,7 @@
             <div class="form-group">
                 <label class="form-label">PHONE NUMBER</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">📱</span>
+                    <span class="input-icon"><i class="ph ph-device-mobile"></i></span>
                     <input type="tel" id="lookupPhone" class="shamrock-input" placeholder="(239) 555-1234"
                         autocomplete="tel">
                 </div>
@@ -50,7 +51,7 @@
             <div class="form-group">
                 <label class="form-label">YOUR FULL NAME</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon"><i class="ph ph-user"></i></span>
                     <input type="text" id="lookupName" class="shamrock-input" placeholder="John Smith"
                         autocomplete="name">
                 </div>
@@ -66,7 +67,7 @@
             </div>
 
             <button class="shamrock-btn shamrock-btn-anonymous full-width" id="btnAnonymous">
-                🕵️ Submit an Anonymous Tip
+                <i class="ph ph-detective"></i> Submit an Anonymous Tip
             </button>
         </section>
 
@@ -79,7 +80,7 @@
 
             <!-- Account badge -->
             <div class="account-badge" id="accountBadge">
-                <div class="account-avatar">👤</div>
+                <div class="account-avatar"><i class="ph ph-user-circle"></i></div>
                 <div class="account-info">
                     <span class="account-name" id="accountName"></span>
                     <span class="account-phone" id="accountPhone"></span>
@@ -88,25 +89,25 @@
 
             <div class="type-grid">
                 <button class="type-card" data-type="contact">
-                    <span class="type-icon">📱</span>
+                    <span class="type-icon"><i class="ph ph-device-mobile"></i></span>
                     <h3>Contact Info</h3>
                     <p>New phone, email</p>
                 </button>
 
                 <button class="type-card" data-type="address">
-                    <span class="type-icon">🏠</span>
+                    <span class="type-icon"><i class="ph ph-house-line"></i></span>
                     <h3>Address</h3>
                     <p>Moved, new location</p>
                 </button>
 
                 <button class="type-card" data-type="extension">
-                    <span class="type-icon">💳</span>
+                    <span class="type-icon"><i class="ph ph-hourglass"></i></span>
                     <h3>Payment Extension</h3>
                     <p>Request more time</p>
                 </button>
 
                 <button class="type-card" data-type="circumstances">
-                    <span class="type-icon">📝</span>
+                    <span class="type-icon"><i class="ph ph-note-pencil"></i></span>
                     <h3>Circumstances</h3>
                     <p>Job, life changes</p>
                 </button>
@@ -123,7 +124,7 @@
             <div class="form-group">
                 <label class="form-label">NEW PHONE NUMBER</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">📱</span>
+                    <span class="input-icon"><i class="ph ph-phone"></i></span>
                     <input type="tel" id="newPhone" class="shamrock-input" placeholder="(239) 555-0000">
                 </div>
             </div>
@@ -131,7 +132,7 @@
             <div class="form-group">
                 <label class="form-label">NEW EMAIL ADDRESS</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">✉️</span>
+                    <span class="input-icon"><i class="ph ph-envelope"></i></span>
                     <input type="email" id="newEmail" class="shamrock-input" placeholder="email@example.com">
                 </div>
             </div>
@@ -158,7 +159,7 @@
             <div class="form-group">
                 <label class="form-label">NEW ADDRESS</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">🏠</span>
+                    <span class="input-icon"><i class="ph ph-house-line"></i></span>
                     <input type="text" id="newAddress" class="shamrock-input" placeholder="123 Main St, Apt 4">
                 </div>
             </div>
@@ -201,7 +202,7 @@
             <div class="form-group">
                 <label class="form-label">REQUESTED NEW DUE DATE</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">📅</span>
+                    <span class="input-icon"><i class="ph ph-calendar"></i></span>
                     <input type="date" id="requestedDate" class="shamrock-input">
                 </div>
             </div>
@@ -241,7 +242,7 @@
         <!-- STEP 3E: ANONYMOUS TIP -->
         <section class="step hidden" id="stepTip">
             <div class="step-header">
-                <span class="step-badge tip-badge">🕵️</span>
+                <span class="step-badge tip-badge"><i class="ph ph-detective"></i></span>
                 <h2>Anonymous Tip</h2>
             </div>
             <p class="step-desc">This tip is <strong>100% anonymous</strong>. No name, phone, or identity is recorded.
@@ -250,7 +251,7 @@
             <div class="form-group">
                 <label class="form-label">DEFENDANT'S NAME (who you're reporting)</label>
                 <div class="input-wrapper">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon"><i class="ph ph-user"></i></span>
                     <input type="text" id="tipDefendantName" class="shamrock-input" placeholder="Defendant's full name">
                 </div>
             </div>
@@ -269,7 +270,7 @@
             </div>
 
             <div class="anonymous-notice">
-                <span class="notice-icon">🔒</span>
+                <span class="notice-icon"><i class="ph ph-lock"></i></span>
                 <p>Your identity is not recorded. No IP address, phone number, or name is logged with this submission.
                 </p>
             </div>
@@ -283,7 +284,7 @@
         <!-- STEP 4: SUCCESS -->
         <section class="step hidden" id="stepSuccess">
             <div class="success-state">
-                <div class="success-icon">✅</div>
+                <div class="success-icon"><i class="ph ph-check-circle"></i></div>
                 <h3 id="successTitle">Update Submitted!</h3>
                 <p id="successMsg">Your update has been received. Our team will review it shortly.</p>
                 <div class="ref-badge">

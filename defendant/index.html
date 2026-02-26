@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shamrock Bail Bonds — Defendant Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- HEADER                                             -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <header class="app-header">
+        <div class="header-inner">
+            <a href="../" class="back-link"><i class="ph ph-arrow-left"></i> Back</a>
+            <div class="logo-text">
+                <h1><i class="ph ph-lock-key-open"></i> Defendant Portal</h1>
+                <p class="tagline">Welcome back to freedom — let's wrap up the paperwork</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- CASE LOOKUP SCREEN                                 -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <main class="container" id="lookupScreen">
+        <div class="lookup-hero">
+            <div class="hero-icon"><i class="ph ph-magnifying-glass"></i></div>
+            <h2>Find Your Case</h2>
+            <p>Enter the case number your co-signer gave you, or your phone number.</p>
+        </div>
+
+        <div class="lookup-form shamrock-card">
+            <div class="form-group">
+                <label for="caseInput"><i class="ph ph-hash"></i> Case Number</label>
+                <input type="text" id="caseInput" placeholder="e.g. SBB-2026-0042" autocomplete="off"
+                    autocapitalize="characters">
+            </div>
+            <div class="divider-or"><span>or</span></div>
+            <div class="form-group">
+                <label for="phoneInput"><i class="ph ph-phone"></i> Phone Number</label>
+                <input type="tel" id="phoneInput" placeholder="(555) 123-4567">
+            </div>
+            <button class="shamrock-btn shamrock-btn-primary btn-full" id="lookupBtn" onclick="lookupCase()">
+                <span class="btn-text"><i class="ph ph-magnifying-glass"></i> Find My Case</span>
+                <span class="btn-loader hidden" id="lookupLoader"><span class="shamrock-spinner"></span></span>
+            </button>
+            <div class="lookup-error hidden" id="lookupError"></div>
+        </div>
+
+        <div class="help-note">
+            <p><i class="ph ph-info"></i> Don't have your case number? Ask the person who got you out — they received it
+                after filing your intake.</p>
+        </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- PORTAL SCREEN (after case found)                   -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="container hidden" id="portalScreen">
+
+        <!-- Case Banner -->
+        <div class="case-banner shamrock-card">
+            <div class="banner-top">
+                <div class="case-badge"><i class="ph ph-shield-check"></i></div>
+                <div class="banner-info">
+                    <span class="banner-name" id="portalDefName">—</span>
+                    <span class="banner-case" id="portalCaseNum">—</span>
+                </div>
+                <span class="banner-status" id="portalStatus">Active</span>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-bar" id="tabBar">
+            <button class="tab active" data-tab="docs" onclick="switchTab('docs')">
+                <i class="ph ph-files"></i>
+                <span>My Docs</span>
+            </button>
+            <button class="tab" data-tab="upload" onclick="switchTab('upload')">
+                <i class="ph ph-camera"></i>
+                <span>Upload ID</span>
+            </button>
+            <button class="tab" data-tab="checkin" onclick="switchTab('checkin')">
+                <i class="ph ph-map-pin"></i>
+                <span>Check In</span>
+            </button>
+            <button class="tab" data-tab="pay" onclick="switchTab('pay')">
+                <i class="ph ph-credit-card"></i>
+                <span>Pay</span>
+            </button>
+            <button class="tab" data-tab="info" onclick="switchTab('info')">
+                <i class="ph ph-pencil-simple"></i>
+                <span>Update</span>
+            </button>
+        </nav>
+
+        <!-- ─── TAB: My Documents ─── -->
+        <section class="tab-content active" id="tab-docs">
+            <div class="section-header">
+                <h2><i class="ph ph-files"></i> Your Documents</h2>
+                <p>Sign the documents below to complete your file.</p>
+            </div>
+            <div class="doc-progress">
+                <span id="defDocProgress">0 of 0 signed</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="defProgressBar" style="width:0%"></div>
+                </div>
+            </div>
+            <div class="doc-list" id="defDocList">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- ─── TAB: Upload ID ─── -->
+        <section class="tab-content" id="tab-upload">
+            <div class="section-header">
+                <h2><i class="ph ph-identification-card"></i> Upload Your ID</h2>
+                <p>We need a photo of your driver's license or government ID to complete your file.</p>
+            </div>
+
+            <div class="upload-group">
+                <label><i class="ph ph-image"></i> Photo ID (Front) <span class="req">*</span></label>
+                <div class="file-upload" id="idFrontUpload">
+                    <input type="file" id="idFront" accept="image/*" capture="environment">
+                    <div class="file-upload-content">
+                        <i class="ph ph-camera upload-icon-ph"></i>
+                        <span class="upload-text">Tap to take photo or upload</span>
+                        <span class="upload-subtext">Driver's license, State ID, or Passport</span>
+                    </div>
+                    <div class="file-preview hidden" id="idFrontPreview"></div>
+                </div>
+            </div>
+
+            <div class="upload-group">
+                <label><i class="ph ph-image"></i> Photo ID (Back)</label>
+                <div class="file-upload" id="idBackUpload">
+                    <input type="file" id="idBack" accept="image/*" capture="environment">
+                    <div class="file-upload-content">
+                        <i class="ph ph-camera upload-icon-ph"></i>
+                        <span class="upload-text">Back of ID (optional)</span>
+                    </div>
+                    <div class="file-preview hidden" id="idBackPreview"></div>
+                </div>
+            </div>
+
+            <div class="upload-group">
+                <div class="section-header">
+                    <h3><i class="ph ph-paperclip"></i> Supporting Documents</h3>
+                    <p>Optional: pay stubs, utility bills, mortgage statements, or anything else requested.</p>
+                </div>
+                <div class="file-upload">
+                    <input type="file" id="supportDocs" accept="image/*,.pdf,.doc,.docx" multiple>
+                    <div class="file-upload-content">
+                        <i class="ph ph-file-plus upload-icon-ph"></i>
+                        <span class="upload-text">Tap to upload documents</span>
+                    </div>
+                </div>
+                <div class="upload-list" id="defUploadList"></div>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary btn-full" id="uploadIdBtn" onclick="uploadDefendantId()">
+                <span class="btn-text"><i class="ph ph-upload-simple"></i> Upload ID</span>
+                <span class="btn-loader hidden" id="uploadLoader"><span class="shamrock-spinner"></span></span>
+            </button>
+            <div class="upload-result hidden" id="uploadResult"></div>
+        </section>
+
+        <!-- ─── TAB: Check In ─── -->
+        <section class="tab-content" id="tab-checkin">
+            <div class="section-header">
+                <h2><i class="ph ph-map-pin"></i> Check In</h2>
+                <p>Take a selfie and share your location to complete your check-in.</p>
+            </div>
+
+            <div class="upload-group">
+                <label><i class="ph ph-smiley"></i> Selfie</label>
+                <div class="file-upload">
+                    <input type="file" id="selfie" accept="image/*" capture="user">
+                    <div class="file-upload-content">
+                        <i class="ph ph-user-circle upload-icon-ph"></i>
+                        <span class="upload-text">Take a selfie</span>
+                    </div>
+                    <div class="file-preview hidden" id="selfiePreview"></div>
+                </div>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-outline btn-full" id="gpsBtn" onclick="captureGPS()">
+                <i class="ph ph-crosshair"></i> Share My Location
+            </button>
+            <div class="gps-result hidden" id="gpsResult">
+                <i class="ph ph-check-circle"></i> <span id="gpsDisplay">Location captured</span>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary btn-full" id="checkinBtn" onclick="submitCheckin()"
+                style="margin-top: var(--space-md)">
+                <span class="btn-text"><i class="ph ph-check-circle"></i> Submit Check-In</span>
+                <span class="btn-loader hidden" id="checkinLoader"><span class="shamrock-spinner"></span></span>
+            </button>
+            <div class="checkin-result hidden" id="checkinResult"></div>
+        </section>
+
+        <!-- ─── TAB: Pay ─── -->
+        <section class="tab-content" id="tab-pay">
+            <div class="section-header">
+                <h2><i class="ph ph-wallet"></i> Make a Payment</h2>
+                <p>Pay your premium balance securely online.</p>
+            </div>
+
+            <div class="payment-info shamrock-card">
+                <div class="pay-row">
+                    <span class="pay-label">Bond Amount</span>
+                    <span class="pay-value" id="payBondAmount">—</span>
+                </div>
+                <div class="pay-row">
+                    <span class="pay-label">Premium</span>
+                    <span class="pay-value" id="payPremium">—</span>
+                </div>
+                <div class="pay-row highlight">
+                    <span class="pay-label">Remaining Balance</span>
+                    <span class="pay-value" id="payBalance">—</span>
+                </div>
+            </div>
+
+            <a href="https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8"
+                class="shamrock-btn shamrock-btn-primary btn-full" target="_blank">
+                <i class="ph ph-credit-card"></i> Pay Now (Secure Link)
+            </a>
+
+            <div class="help-note" style="margin-top: var(--space-md)">
+                <p><i class="ph ph-phone"></i> Prefer to pay by phone? Call <a href="tel:+12393322245">(239)
+                        332-2245</a></p>
+            </div>
+        </section>
+
+        <!-- ─── TAB: Update Info ─── -->
+        <section class="tab-content" id="tab-info">
+            <div class="section-header">
+                <h2><i class="ph ph-pencil-simple"></i> Update Your Info</h2>
+                <p>Let us know if anything has changed.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="updateType"><i class="ph ph-list"></i> What changed?</label>
+                <select id="updateType">
+                    <option value="" disabled selected>Select update type</option>
+                    <option value="address">New address</option>
+                    <option value="phone">New phone number</option>
+                    <option value="email">New email</option>
+                    <option value="employer">New employer</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="updateDetails"><i class="ph ph-note"></i> Details</label>
+                <textarea id="updateDetails" rows="3" placeholder="Tell us what changed..."></textarea>
+            </div>
+
+            <button class="shamrock-btn shamrock-btn-primary btn-full" onclick="submitUpdate()">
+                <span class="btn-text"><i class="ph ph-paper-plane-tilt"></i> Submit Update</span>
+            </button>
+        </section>
+
+        <!-- Help Footer -->
+        <div class="help-bar">
+            <p><i class="ph ph-phone"></i> Questions? Call 24/7: <a href="tel:+12393322245">(239) 332-2245</a></p>
+        </div>
+    </div>
+
+    <script src="../shared/brand.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
