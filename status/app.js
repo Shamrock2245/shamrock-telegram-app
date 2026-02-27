@@ -162,6 +162,9 @@ async function handleLookup() {
     }
 
     state.caseData = caseData;
+    // Remove skeleton state before rendering
+    const dashboardEl = document.getElementById('stepDashboard');
+    if (dashboardEl) dashboardEl.classList.remove('skeleton-loading');
     renderDashboard(state.caseData);
 
     goToStep(caseData._notFound ? 'stepNotFound' : 'stepDashboard');

@@ -213,3 +213,29 @@ body {
     min-width: 64px;
     min-height: 64px;
 }
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADING STATE
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.skeleton-loading .case-card,
+.skeleton-loading .status-card,
+.skeleton-loading .info-row {
+    background: linear-gradient(90deg,
+        var(--surface) 25%,
+        var(--surface-alt, #2a2a2a) 50%,
+        var(--surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    color: transparent !important;
+    border-radius: 8px;
+    pointer-events: none;
+}
+.skeleton-loading .case-card *,
+.skeleton-loading .status-card *,
+.skeleton-loading .info-row * {
+    visibility: hidden;
+}

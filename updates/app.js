@@ -66,7 +66,7 @@ function bindEvents() {
 
     // Step 1: Identity
     const phoneInput = document.getElementById('lookupPhone');
-    phoneInput.addEventListener('input', (e) => {
+    phoneInput.addEventListener('input', debounce((e) => {
         e.target.value = formatPhone(e.target.value);
         validateIdentity();
     });
@@ -200,28 +200,23 @@ async function submitUpdate(type) {
     // Collect form data based on type
     const formData = collectFormData(type);
 
-    // Send to GAS
+    // Send to GAS — use text/plain to avoid CORS preflight
     try {
-        fetch(UPDATE_CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: UPDATE_CONFIG.ACTION,
-                referenceId: state.referenceId,
-                updateType: type,
-                isAnonymous: state.isAnonymous,
-                name: state.isAnonymous ? 'ANONYMOUS' : state.name,
-                phone: state.isAnonymous ? '' : state.phone.replace(/\D/g, ''),
-                formData: formData,
-                telegramUserId: state.isAnonymous ? '' : (tgUser?.id?.toString() || ''),
-                telegramUsername: state.isAnonymous ? '' : (tgUser?.username || ''),
-                source: 'telegram_mini_app',
-                timestamp: new Date().toISOString()
-            }),
-            mode: 'no-cors'
+        await gasPost(UPDATE_CONFIG.GAS_ENDPOINT, {
+            action: UPDATE_CONFIG.ACTION,
+            referenceId: state.referenceId,
+            updateType: type,
+            isAnonymous: state.isAnonymous,
+            name: state.isAnonymous ? 'ANONYMOUS' : state.name,
+            phone: state.isAnonymous ? '' : state.phone.replace(/\D/g, ''),
+            formData: formData,
+            telegramUserId: state.isAnonymous ? '' : (tgUser?.id?.toString() || ''),
+            telegramUsername: state.isAnonymous ? '' : (tgUser?.username || ''),
+            source: 'telegram_mini_app',
+            timestamp: new Date().toISOString()
         });
     } catch (err) {
-        console.log('Update submission (non-fatal):', err);
+        console.log('Update submission (non-fatal):', err.message);
     }
 
     // Show success

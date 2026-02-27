@@ -52,6 +52,14 @@ let state = {
 // ═══════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Restore name/phone from previous session
+    const savedSession = loadFormSession('payment');
+    if (savedSession) {
+        try {
+            if (savedSession.name) document.getElementById('lookupName').value = savedSession.name;
+            if (savedSession.phone) document.getElementById('lookupPhone').value = savedSession.phone;
+        } catch (e) { /* silent */ }
+    }
     initTheme();
     initTelegram();
     bindEvents();
@@ -166,24 +174,25 @@ async function handleLookup() {
 
     if (tg) tg.HapticFeedback.impactOccurred('medium');
 
+    // Try real GAS lookup — if it fails, proceed optimistically
     try {
-        await fetch(PAYMENT_CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: PAYMENT_CONFIG.ACTION_LOOKUP,
-                phone: phone.replace(/\D/g, ''),
-                name: name,
-                telegramUserId: tgUser?.id?.toString() || ''
-            }),
-            mode: 'no-cors'
+        const lookupResult = await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+            action: PAYMENT_CONFIG.ACTION_LOOKUP,
+            phone: phone.replace(/\D/g, ''),
+            name: name,
+            telegramUserId: tgUser?.id?.toString() || ''
         });
+        if (lookupResult && lookupResult.caseData) {
+            state.caseData = lookupResult.caseData;
+        }
     } catch (err) {
-        console.log('Lookup (no-cors, expected opaque):', err);
+        console.log('Lookup error (proceeding optimistically):', err.message);
     }
 
     setTimeout(() => {
         state.accountFound = true;
+        // Save name/phone to session
+        saveFormSession('payment', { name: state.name, phone: state.phone });
 
         document.getElementById('accountName').textContent = name;
         document.getElementById('accountDetail').textContent = formatPhone(phone);
@@ -224,6 +233,25 @@ function handleSelfieCapture(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    // P1-8: Confirm selfie before accepting
+    if (tg) {
+        tg.showConfirm('Use this photo for your check-in?', (confirmed) => {
+            if (!confirmed) {
+                // Reset selfie state
+                state.selfieFile = null;
+                state.selfieBase64 = null;
+                document.getElementById('selfiePreview').classList.add('hidden');
+                document.getElementById('selfieStatus').textContent = 'Tap to take photo';
+                document.getElementById('selfieInput').value = '';
+                return;
+            }
+            acceptSelfie(file);
+        });
+        return;
+    }
+    acceptSelfie(file);
+}
+function acceptSelfie(file) {
     state.selfieFile = file;
 
     // Read as base64 for preview and upload
@@ -244,30 +272,26 @@ function handleSelfieCapture(e) {
 
 function handleLocationCapture() {
     const status = document.getElementById('locationStatus');
-    status.textContent = 'Requesting location…';
-
-    if (!navigator.geolocation) {
-        status.textContent = 'Location not supported on this device';
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            state.latitude = pos.coords.latitude;
-            state.longitude = pos.coords.longitude;
-            status.textContent = `${state.latitude.toFixed(4)}, ${state.longitude.toFixed(4)}`;
+    captureLocationTiered({
+        onSuccess: (lat, lng, source) => {
+            state.latitude = lat;
+            state.longitude = lng;
+            status.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             status.classList.add('done');
             document.getElementById('locationBadge').classList.remove('hidden');
             validateCheckin();
             if (tg) tg.HapticFeedback.notificationOccurred('success');
+            console.log('[location] Captured via', source);
         },
-        (err) => {
-            console.log('Geolocation error:', err);
-            status.textContent = 'Could not get location — tap to retry';
-            if (tg) tg.HapticFeedback.notificationOccurred('error');
+        onManualFallback: () => {
+            status.textContent = 'Location unavailable — proceeding without GPS';
+            // Allow checkin without location if selfie is present
+            if (state.selfieFile) {
+                document.getElementById('btnSubmitCheckin').disabled = false;
+            }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
+        onStatusUpdate: (msg) => { status.textContent = msg; }
+    });
 }
 
 function validateCheckin() {
@@ -289,80 +313,68 @@ async function submitCheckin() {
 
     state.referenceId = 'CHK-' + Date.now().toString(36).toUpperCase();
 
-    // Log check-in to GAS (fire-and-forget)
+    // Log check-in to GAS
     try {
-        fetch(PAYMENT_CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: PAYMENT_CONFIG.ACTION_CHECKIN_LOG,
-                referenceId: state.referenceId,
-                name: state.name,
-                phone: state.phone.replace(/\D/g, ''),
-                hasSelfie: true,
-                latitude: state.latitude,
-                longitude: state.longitude,
-                telegramUserId: tgUser?.id?.toString() || '',
-                telegramUsername: tgUser?.username || '',
-                source: 'telegram_mini_app',
-                timestamp: new Date().toISOString()
-            }),
-            mode: 'no-cors'
+        await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+            action: PAYMENT_CONFIG.ACTION_CHECKIN_LOG,
+            referenceId: state.referenceId,
+            name: state.name,
+            phone: state.phone.replace(/\D/g, ''),
+            hasSelfie: !!state.selfieBase64,
+            latitude: state.latitude,
+            longitude: state.longitude,
+            telegramUserId: tgUser?.id?.toString() || '',
+            telegramUsername: tgUser?.username || '',
+            source: 'telegram_mini_app',
+            timestamp: new Date().toISOString()
         });
     } catch (err) {
-        console.log('Check-in log (non-fatal):', err);
+        console.log('Check-in log (non-fatal):', err.message);
     }
-
-    // Upload selfie to GAS
+    // Upload selfie BEFORE tg.sendData (sendData closes the WebView)
     if (state.selfieBase64) {
         try {
-            fetch(PAYMENT_CONFIG.GAS_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'telegram_mini_app_upload',
-                    telegramUserId: tgUser?.id?.toString() || '',
-                    docType: 'checkin_selfie',
-                    fileName: `checkin_${state.referenceId}.jpg`,
-                    mimeType: state.selfieFile?.type || 'image/jpeg',
-                    base64Data: state.selfieBase64.split(',')[1] // strip data:image/...;base64,
-                }),
-                mode: 'no-cors'
+            if (btnText) btnText.textContent = 'Uploading photo...';
+            await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+                action: 'telegram_mini_app_upload',
+                telegramUserId: tgUser?.id?.toString() || '',
+                docType: 'checkin_selfie',
+                fileName: `checkin_${state.referenceId}.jpg`,
+                mimeType: state.selfieFile?.type || 'image/jpeg',
+                base64Data: state.selfieBase64.split(',')[1]
             });
         } catch (err) {
-            console.log('Selfie upload (non-fatal):', err);
+            console.log('Selfie upload (non-fatal):', err.message);
         }
     }
-
-    // Show success
-    setTimeout(() => {
-        document.getElementById('successTitle').textContent = 'Check-In Complete!';
-        document.getElementById('successMsg').textContent =
-            'Thank you, ' + state.name + '. Your check-in has been recorded.';
-        document.getElementById('refId').textContent = state.referenceId;
-        goToStep('stepSuccess');
-
-        if (tg) {
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.BackButton.hide();
-            try {
-                tg.sendData(JSON.stringify({
-                    action: 'checkin_completed',
-                    referenceId: state.referenceId,
-                    name: state.name,
-                    phone: state.phone,
-                    latitude: state.latitude,
-                    longitude: state.longitude
-                }));
-            } catch (err) {
-                console.log('tg.sendData:', err);
-            }
+    // Clear session after successful checkin
+    clearFormSession('payment');
+    // Show success then send data to bot
+    document.getElementById('successTitle').textContent = 'Check-In Complete!';
+    document.getElementById('successMsg').textContent =
+        'Thank you, ' + state.name + '. Your check-in has been recorded.';
+    document.getElementById('refId').textContent = state.referenceId;
+    goToStep('stepSuccess');
+    if (tg) {
+        tg.HapticFeedback.notificationOccurred('success');
+        tg.BackButton.hide();
+        try {
+            tg.sendData(JSON.stringify({
+                action: 'checkin_completed',
+                referenceId: state.referenceId,
+                name: state.name,
+                phone: state.phone,
+                latitude: state.latitude,
+                longitude: state.longitude
+            }));
+        } catch (err) {
+            console.log('tg.sendData:', err);
         }
-
-        btn.disabled = false;
-        btnText.classList.remove('hidden');
-        btnLoader.classList.add('hidden');
-    }, 800);
+    }
+    btn.disabled = false;
+    if (btnText) btnText.textContent = 'Submit Check-In';
+    btnText.classList.remove('hidden');
+    btnLoader.classList.add('hidden');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -452,29 +464,21 @@ function handlePayNow(e) {
 // ═══════════════════════════════════════════════════════════════
 
 function logPaymentToGAS(status) {
-    try {
-        fetch(PAYMENT_CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: PAYMENT_CONFIG.ACTION_PAYMENT_LOG,
-                referenceId: state.referenceId,
-                name: state.name,
-                phone: state.phone.replace(/\D/g, ''),
-                amount: state.amount,
-                paymentType: 'payment_plan',
-                status: status,
-                telegramUserId: tgUser?.id?.toString() || '',
-                telegramUsername: tgUser?.username || '',
-                source: 'telegram_mini_app',
-                platform: 'telegram',
-                timestamp: new Date().toISOString()
-            }),
-            mode: 'no-cors'
-        });
-    } catch (err) {
-        console.log('Payment log (non-fatal):', err);
-    }
+    // Fire-and-forget — non-fatal
+    gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+        action: PAYMENT_CONFIG.ACTION_PAYMENT_LOG,
+        referenceId: state.referenceId,
+        name: state.name,
+        phone: state.phone.replace(/\D/g, ''),
+        amount: state.amount,
+        paymentType: 'payment_plan',
+        status: status,
+        telegramUserId: tgUser?.id?.toString() || '',
+        telegramUsername: tgUser?.username || '',
+        source: 'telegram_mini_app',
+        platform: 'telegram',
+        timestamp: new Date().toISOString()
+    }).catch(err => console.log('Payment log (non-fatal):', err.message));
 }
 
 // ═══════════════════════════════════════════════════════════════

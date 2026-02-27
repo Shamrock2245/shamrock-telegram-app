@@ -113,6 +113,8 @@ let uploadedFiles = {};
 function nextStep() {
     // Validate current step first
     if (!validateStep(currentStep)) return;
+    // Save progress to session storage on each step advance
+    saveFormSession('intake', collectPartialFormData());
 
     if (currentStep < totalSteps) {
         currentStep++;
@@ -259,50 +261,50 @@ function shake(el) {
 
 function captureLocation() {
     const btn = document.getElementById('locationBtn');
-    const result = document.getElementById('locationResult');
-    const display = document.getElementById('locationDisplay');
-
-    btn.innerHTML = '<span class="spinner"></span> Capturing...';
+    btn.innerHTML = '<span class="spinner"></span> Getting location&hellip;';
     btn.disabled = true;
-
-    // Try Telegram's location first (smoother UX)
-    if (tg?.LocationManager) {
-        tg.LocationManager.init(() => {
-            tg.LocationManager.getLocation((loc) => {
-                if (loc) {
-                    setLocation(loc.latitude, loc.longitude);
-                } else {
-                    // Fall back to browser geolocation
-                    browserGeolocation();
-                }
-            });
-        });
-        return;
-    }
-
-    // Browser geolocation
-    browserGeolocation();
-}
-
-function browserGeolocation() {
-    if (!navigator.geolocation) {
-        const btn = document.getElementById('locationBtn');
-        btn.innerHTML = '<span class="loc-icon">📍</span> Location not available';
-        btn.disabled = false;
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation(pos.coords.latitude, pos.coords.longitude),
-        (err) => {
-            console.error('Geolocation error:', err);
-            const btn = document.getElementById('locationBtn');
+    captureLocationTiered({
+        onSuccess: (lat, lng, source) => {
+            setLocation(lat, lng);
+            console.log('[location] Captured via', source);
+        },
+        onManualFallback: () => {
             btn.innerHTML = '<span class="loc-icon">📍</span> Tap to retry';
             btn.disabled = false;
+            showManualLocationFallback();
         },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
+        onStatusUpdate: (msg) => {
+            btn.innerHTML = '<span class="spinner"></span> ' + msg;
+        }
+    });
 }
+function showManualLocationFallback() {
+    const fallback = document.getElementById('manualLocationFallback');
+    if (fallback) fallback.classList.remove('hidden');
+}
+function useManualLocation() {
+    const cityInput = document.getElementById('manualCity');
+    if (!cityInput || !cityInput.value.trim()) return;
+    locationData = { manualCity: cityInput.value.trim() };
+    document.getElementById('gpsLat').value = '';
+    document.getElementById('gpsLng').value = '';
+    let cityField = document.getElementById('manualCityValue');
+    if (!cityField) {
+        cityField = document.createElement('input');
+        cityField.type = 'hidden';
+        cityField.id = 'manualCityValue';
+        document.body.appendChild(cityField);
+    }
+    cityField.value = cityInput.value.trim();
+    const result = document.getElementById('locationResult');
+    const display = document.getElementById('locationDisplay');
+    if (result) result.classList.remove('hidden');
+    if (display) display.textContent = cityInput.value.trim();
+    const fallback = document.getElementById('manualLocationFallback');
+    if (fallback) fallback.classList.add('hidden');
+    if (tg) tg.HapticFeedback.notificationOccurred('success');
+}
+
 
 function setLocation(lat, lng) {
     locationData = { latitude: lat, longitude: lng };
@@ -448,6 +450,32 @@ function populateReview() {
 // FORM SUBMISSION
 // ═══════════════════════════════════════════════════════════════════════════
 
+
+function skipIdUpload(e) {
+    e.preventDefault();
+    // Mark ID as skipped — staff will collect later
+    const idFrontUpload = document.getElementById('idFrontUpload');
+    if (idFrontUpload) {
+        idFrontUpload.classList.add('skipped');
+        idFrontUpload.querySelector('.upload-text').textContent = 'ID will be provided later';
+        idFrontUpload.querySelector('.upload-icon').innerHTML = '<i class="ph ph-clock"></i>';
+    }
+    // Remove the skip link
+    const skipLink = document.querySelector('[onclick="skipIdUpload(event)"]');
+    if (skipLink && skipLink.parentElement) skipLink.parentElement.style.display = 'none';
+    if (tg) tg.HapticFeedback.notificationOccurred('warning');
+}
+function collectPartialFormData() {
+    const ids = ['defFirstName','defLastName','defDOB','defCharges','defBondAmount',
+                 'indFirstName','indLastName','indDOB','indRelation','indPhone','indEmail','indAddress',
+                 'indEmployer','indJobTitle','ref1Name','ref1Phone','ref1Relation','ref2Name','ref2Phone','ref2Relation'];
+    const data = {};
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.value;
+    });
+    return data;
+}
 async function submitForm() {
     // Final validation
     if (!validateStep(5)) return;
@@ -522,36 +550,40 @@ async function submitForm() {
 
         console.log('Submitting intake:', JSON.stringify(intakeData, null, 2));
 
-        // Submit to GAS
-        const response = await fetch(CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(intakeData),
-            mode: 'no-cors' // GAS doesn't support CORS for doPost
-        });
-
-        // Note: with no-cors, response is opaque — we can't read it.
-        // GAS doPost will process the data and we show success optimistically.
-
-        // Handle file uploads separately if needed
+        // Submit to GAS — use text/plain to avoid CORS preflight
+        const gasResult = await gasPost(CONFIG.GAS_ENDPOINT, intakeData);
+        if (!gasResult.success && !gasResult._opaque) {
+            throw new Error(gasResult.error || 'Submission failed');
+        }
+        // Await all file uploads BEFORE calling tg.sendData (which closes the WebView)
+        const uploadPromises = [];
         if (uploadedFiles.idFront) {
-            await uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId);
+            uploadPromises.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
         }
         if (uploadedFiles.idBack) {
-            await uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId);
+            uploadPromises.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
         }
-
-        // Also send data back to bot via Telegram SDK
+        if (uploadPromises.length > 0) {
+            submitText.textContent = 'Uploading files...';
+            await Promise.allSettled(uploadPromises);
+            submitText.textContent = 'Submitting...';
+        }
+        // Clear session storage on successful submission
+        clearFormSession('intake');
+        // Send data back to bot AFTER uploads complete
         if (tg) {
-            tg.sendData(JSON.stringify({
-                type: 'intake_submitted',
-                defName: intakeData.DefName,
-                indName: intakeData.IndName,
-                facility: intakeData.DefFacility,
-                timestamp: intakeData.timestamp
-            }));
+            try {
+                tg.sendData(JSON.stringify({
+                    type: 'intake_submitted',
+                    defName: intakeData.DefName,
+                    indName: intakeData.IndName,
+                    facility: intakeData.DefFacility,
+                    timestamp: intakeData.timestamp
+                }));
+            } catch (e) {
+                console.log('tg.sendData:', e);
+            }
         }
-
         // Show success screen
         showSuccess(intakeData);
 
@@ -583,19 +615,18 @@ async function uploadFileToGAS(file, docType, telegramUserId) {
             reader.onload = async (e) => {
                 const base64 = e.target.result.split(',')[1]; // Remove data:...;base64, prefix
 
-                await fetch(CONFIG.GAS_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                try {
+                    await gasPost(CONFIG.GAS_ENDPOINT, {
                         action: 'telegram_mini_app_upload',
                         telegramUserId: telegramUserId,
                         docType: docType,
                         fileName: file.name,
                         mimeType: file.type,
                         base64Data: base64
-                    }),
-                    mode: 'no-cors'
-                });
+                    });
+                } catch (uploadErr) {
+                    console.warn('[upload] File upload failed (non-fatal):', uploadErr.message);
+                }
 
                 resolve();
             };
@@ -694,6 +725,17 @@ function injectShakeCSS() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Restore partial form data from previous session
+    const savedSession = loadFormSession('intake');
+    if (savedSession) {
+        try {
+            Object.entries(savedSession).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el && el.type !== 'file' && el.type !== 'checkbox') el.value = val;
+            });
+            console.log('[session] Restored partial intake form data');
+        } catch (e) { /* silent */ }
+    }
     initTelegram();
     initFileUploads();
     initFacilityToggle();

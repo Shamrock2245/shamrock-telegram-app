@@ -359,33 +359,19 @@ function captureGPS() {
     const btn = document.getElementById('gpsBtn');
     btn.innerHTML = '<span class="shamrock-spinner"></span> Getting location…';
     btn.disabled = true;
-
-    // Try Telegram first
-    if (window.Telegram?.WebApp?.LocationManager) {
-        window.Telegram.WebApp.LocationManager.getLocation((loc) => {
-            if (loc) {
-                setGPS(loc.latitude, loc.longitude);
-            } else {
-                browserGPS();
-            }
-        });
-    } else {
-        browserGPS();
-    }
+    captureLocationTiered({
+        onSuccess: (lat, lng, source) => {
+            setGPS(lat, lng);
+            console.log('[location] Captured via', source);
+        },
+        onManualFallback: () => {
+            resetGPSBtn('Location unavailable — tap to retry');
+        },
+        onStatusUpdate: (msg) => {
+            btn.innerHTML = '<span class="shamrock-spinner"></span> ' + msg;
+        }
+    });
 }
-
-function browserGPS() {
-    if (!navigator.geolocation) {
-        resetGPSBtn('Location not available');
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(
-        (pos) => setGPS(pos.coords.latitude, pos.coords.longitude),
-        () => resetGPSBtn('Location denied'),
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
-}
-
 function setGPS(lat, lng) {
     gpsData = { lat, lng };
     document.getElementById('gpsResult').classList.remove('hidden');
@@ -508,12 +494,7 @@ async function submitUpdate() {
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function formatPhone(value) {
-    const digits = value.replace(/\D/g, '').slice(0, 10);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
+
 
 function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
