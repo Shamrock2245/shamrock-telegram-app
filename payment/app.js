@@ -89,10 +89,10 @@ function bindEvents() {
 
     // Step 1: Phone formatting + validation
     const phoneInput = document.getElementById('lookupPhone');
-    phoneInput.addEventListener('input', (e) => {
+    phoneInput.addEventListener('input', debounce((e) => {
         e.target.value = formatPhone(e.target.value);
         validateStep1();
-    });
+    }, 150));
     document.getElementById('lookupName').addEventListener('input', validateStep1);
     document.getElementById('btnLookup').addEventListener('click', handleLookup);
 

@@ -63,10 +63,10 @@ function bindEvents() {
 
     // Phone formatting
     const phoneInput = document.getElementById('lookupPhone');
-    phoneInput.addEventListener('input', (e) => {
+    phoneInput.addEventListener('input', debounce((e) => {
         e.target.value = formatPhone(e.target.value);
         validateForm();
-    });
+    }, 150));
     document.getElementById('lookupName').addEventListener('input', validateForm);
     document.getElementById('btnLookup').addEventListener('click', handleLookup);
 
@@ -153,7 +153,9 @@ async function handleLookup() {
             }
         }
     } catch (err) {
-        console.log('GAS lookup error (will use fallback):', err.message);
+        console.log('GAS lookup error:', err.message);
+        // P1-8: Network error — distinguish from "case not found"
+        caseData = buildOfflineData(name, phone);
     }
 
     // Fallback: if GAS didn't return case data, show a "pending lookup" state
@@ -169,7 +171,7 @@ async function handleLookup() {
 
     goToStep(caseData._notFound ? 'stepNotFound' : 'stepDashboard');
     if (tg) {
-        tg.HapticFeedback.notificationOccurred(caseData._notFound ? 'warning' : 'success');
+        tg.HapticFeedback.notificationOccurred((caseData._notFound || caseData._offline) ? 'warning' : 'success');
         tg.BackButton.show();
     }
 
@@ -198,6 +200,25 @@ function buildNotFoundData(name, phone) {
  * Build a "pending lookup" card when we can't reach GAS.
  * Shows the user we received their request and staff will follow up.
  */
+function buildOfflineData(name, phone) {
+    return {
+        _offline: true,
+        _notFound: false,
+        name: name,
+        phone: phone,
+        status: 'Offline',
+        courtDates: null,
+        payment: null,
+        caseSummary: {
+            bondAmount: null,
+            charges: '⚠️ Could not reach our servers. Please check your connection and try again.',
+            postingDate: '—',
+            caseNumber: 'Network Error — Please retry'
+        },
+        documents: []
+    };
+}
+
 function buildPendingLookupData(name, phone) {
     return {
         name: name,
