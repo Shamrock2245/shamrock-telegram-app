@@ -1,18 +1,11 @@
 /**
  * Shamrock Bail Bonds — Telegram Mini App
- * intake/app.js — uses globals from shared/brand.js (tg, tgUser, tgInitData)
+ * intake/app.js — uses globals from shared/brand.js:
+ *   tg, tgUser, tgInitData, initTelegram, initTheme, toggleTheme,
+ *   formatPhone, gasPost, captureLocationTiered,
+ *   saveFormSession, loadFormSession, clearFormSession, debounce,
+ *   SHAMROCK_GAS_ENDPOINT, SHAMROCK_PHONE, SHAMROCK_PAYMENT_LINK
  */
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════
-
-var CONFIG = {
-    GAS_ENDPOINT: 'https://script.google.com/macros/s/AKfycby5N-lHvM2XzKnX38KSqekq0ENWMLYqYM2bYxuZcRRAQcBhP3RvBaF0CbQa9gKK73QI4w/exec',
-    ACTION: 'telegram_mini_app_intake',
-    PAYMENT_LINK: 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8',
-    PHONE: '(239) 332-2245'
-};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FORM STATE
@@ -24,6 +17,61 @@ var locationData = null;
 var uploadedFiles = {};
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SESSION PERSISTENCE — restore progress if user accidentally closed
+// ═══════════════════════════════════════════════════════════════════════════
+
+function saveIntakeSession() {
+    var gv = function (id) {
+        var el = document.getElementById(id);
+        return el ? el.value : '';
+    };
+    saveFormSession('intake', {
+        step: currentStep,
+        defFirstName: gv('defFirstName'), defLastName: gv('defLastName'),
+        defDOB: gv('defDOB'), defFacility: gv('defFacility'),
+        defFacilityOther: gv('defFacilityOther'),
+        defCharges: gv('defCharges'), defBondAmount: gv('defBondAmount'),
+        indFirstName: gv('indFirstName'), indLastName: gv('indLastName'),
+        indDOB: gv('indDOB'), indRelation: gv('indRelation'),
+        indPhone: gv('indPhone'), indEmail: gv('indEmail'),
+        indAddress: gv('indAddress'), indEmployer: gv('indEmployer'),
+        indJobTitle: gv('indJobTitle'),
+        ref1Name: gv('ref1Name'), ref1Phone: gv('ref1Phone'), ref1Relation: gv('ref1Relation'),
+        ref2Name: gv('ref2Name'), ref2Phone: gv('ref2Phone'), ref2Relation: gv('ref2Relation'),
+        locationData: locationData
+    });
+}
+
+function restoreIntakeSession() {
+    var saved = loadFormSession('intake');
+    if (!saved) return;
+    var fields = [
+        'defFirstName', 'defLastName', 'defDOB', 'defFacility', 'defFacilityOther',
+        'defCharges', 'defBondAmount',
+        'indFirstName', 'indLastName', 'indDOB', 'indRelation',
+        'indPhone', 'indEmail', 'indAddress', 'indEmployer', 'indJobTitle',
+        'ref1Name', 'ref1Phone', 'ref1Relation',
+        'ref2Name', 'ref2Phone', 'ref2Relation'
+    ];
+    fields.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && saved[id]) el.value = saved[id];
+    });
+    if (saved.defFacility === 'other') {
+        var otherGroup = document.getElementById('defFacilityOtherGroup');
+        if (otherGroup) otherGroup.classList.remove('hidden');
+    }
+    if (saved.locationData) {
+        locationData = saved.locationData;
+        setLocation(locationData.latitude, locationData.longitude, true);
+    }
+    if (saved.step && saved.step > 1) {
+        currentStep = saved.step;
+        showStep(currentStep);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // STEP NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -32,6 +80,7 @@ function nextStep() {
     if (currentStep < totalSteps) {
         currentStep++;
         showStep(currentStep);
+        saveIntakeSession();
     }
 }
 
@@ -106,15 +155,7 @@ function validateStep(step) {
             }
             return;
         }
-        if (field.type === 'file') {
-            if ((!field.files || !field.files.length) && field.hasAttribute('required')) {
-                valid = false;
-                var fu = field.closest('.file-upload');
-                if (fu) fu.classList.add('invalid');
-                shake(fu);
-            }
-            return;
-        }
+        if (field.type === 'file') return; // files are always optional
         if (!field.value.trim()) {
             valid = false;
             field.classList.add('invalid');
@@ -126,10 +167,16 @@ function validateStep(step) {
 
     if (step === 2) {
         var email = document.getElementById('indEmail');
-        if (email && email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        if (email && email.value && !isValidEmail(email.value)) {
             email.classList.add('invalid');
             valid = false;
             shake(email);
+        }
+        var phone = document.getElementById('indPhone');
+        if (phone && phone.value && !isValidPhone(phone.value)) {
+            phone.classList.add('invalid');
+            valid = false;
+            shake(phone);
         }
     }
 
@@ -144,52 +191,63 @@ function shake(el) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GPS LOCATION
+// GPS LOCATION — uses brand.js captureLocationTiered (4-tier cascade)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function captureLocation() {
     var btn = document.getElementById('locationBtn');
-    btn.innerHTML = '<span class="spinner"></span> Capturing...';
+    var locText = btn.querySelector('.loc-text');
     btn.disabled = true;
 
-    if (tg && tg.LocationManager) {
-        tg.LocationManager.init(function () {
-            tg.LocationManager.getLocation(function (loc) {
-                if (loc) setLocation(loc.latitude, loc.longitude);
-                else browserGeolocation();
-            });
-        });
-        return;
-    }
-    browserGeolocation();
-}
-
-function browserGeolocation() {
-    if (!navigator.geolocation) {
-        var btn = document.getElementById('locationBtn');
-        btn.innerHTML = '<span class="loc-icon">📍</span> Location not available';
-        btn.disabled = false;
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(
-        function (pos) { setLocation(pos.coords.latitude, pos.coords.longitude); },
-        function () {
-            var btn = document.getElementById('locationBtn');
-            btn.innerHTML = '<span class="loc-icon">📍</span> Tap to retry';
-            btn.disabled = false;
+    captureLocationTiered({
+        onSuccess: function (lat, lng, source) {
+            setLocation(lat, lng, false);
+            console.log('[intake] Location captured via', source);
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-    );
+        onManualFallback: function () {
+            btn.disabled = false;
+            if (locText) locText.textContent = 'Location unavailable';
+            document.getElementById('manualLocationFallback').classList.remove('hidden');
+        },
+        onStatusUpdate: function (msg) {
+            if (locText) locText.textContent = msg;
+        }
+    });
 }
 
-function setLocation(lat, lng) {
+function setLocation(lat, lng, silent) {
     locationData = { latitude: lat, longitude: lng };
     document.getElementById('gpsLat').value = lat;
     document.getElementById('gpsLng').value = lng;
     document.getElementById('locationBtn').classList.add('hidden');
+    document.getElementById('manualLocationFallback').classList.add('hidden');
     document.getElementById('locationResult').classList.remove('hidden');
     document.getElementById('locationDisplay').textContent = 'Location captured (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ')';
+    if (!silent && tg) tg.HapticFeedback.notificationOccurred('success');
+}
+
+function useManualLocation() {
+    var city = document.getElementById('manualCity');
+    if (!city || !city.value.trim()) {
+        shake(city);
+        return;
+    }
+    // Store city text as location data (no GPS coords)
+    locationData = { manual: city.value.trim(), latitude: null, longitude: null };
+    document.getElementById('locationBtn').classList.add('hidden');
+    document.getElementById('manualLocationFallback').classList.add('hidden');
+    document.getElementById('locationResult').classList.remove('hidden');
+    document.getElementById('locationDisplay').textContent = '📍 ' + city.value.trim();
     if (tg) tg.HapticFeedback.notificationOccurred('success');
+}
+
+function skipIdUpload(e) {
+    if (e) e.preventDefault();
+    var frontUpload = document.getElementById('idFrontUpload');
+    if (frontUpload) frontUpload.classList.add('hidden');
+    var skipLink = e && e.target;
+    if (skipLink) skipLink.textContent = '✓ Skipped — you can provide later';
+    if (tg) tg.HapticFeedback.impactOccurred('light');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -271,8 +329,11 @@ function populateReview() {
         '</div>';
 
     if (locationData) {
+        var locDisplay = locationData.manual
+            ? locationData.manual
+            : (locationData.latitude.toFixed(4) + ', ' + locationData.longitude.toFixed(4));
         html += '<div class="review-section"><div class="review-section-title">📍 Location</div>' +
-            '<div class="review-row"><span class="review-label">GPS</span><span class="review-value">' + locationData.latitude.toFixed(4) + ', ' + locationData.longitude.toFixed(4) + '</span></div></div>';
+            '<div class="review-row"><span class="review-label">GPS</span><span class="review-value">' + locDisplay + '</span></div></div>';
     }
     if (Object.keys(uploadedFiles).length > 0) {
         html += '<div class="review-section"><div class="review-section-title">📄 Documents</div>' +
@@ -284,7 +345,7 @@ function populateReview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FORM SUBMISSION
+// FORM SUBMISSION — uses brand.js gasPost() for real response handling
 // ═══════════════════════════════════════════════════════════════════════════
 
 function submitForm() {
@@ -302,7 +363,7 @@ function submitForm() {
     var facility = gv('defFacility') === 'other' ? gv('defFacilityOther') : gv('defFacility');
 
     var intakeData = {
-        action: CONFIG.ACTION,
+        action: 'telegram_mini_app_intake',
         initData: tgInitData,
         telegramUserId: tgUser ? String(tgUser.id) : '',
         telegramUsername: tgUser ? (tgUser.username || '') : '',
@@ -319,33 +380,45 @@ function submitForm() {
         Ref2Name: gv('ref2Name'), Ref2Phone: gv('ref2Phone'), Ref2Relation: gv('ref2Relation'),
         gpsLatitude: locationData ? locationData.latitude : null,
         gpsLongitude: locationData ? locationData.longitude : null,
+        manualLocation: locationData ? (locationData.manual || null) : null,
         source: 'telegram_mini_app', platform: 'telegram',
         timestamp: new Date().toISOString(), consent: true
     };
 
-    fetch(CONFIG.GAS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(intakeData),
-        mode: 'no-cors'
-    }).then(function () {
-        var ups = [];
-        if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
-        if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
-        return Promise.all(ups);
-    }).then(function () {
-        if (tg) {
-            tg.sendData(JSON.stringify({ type: 'intake_submitted', defName: intakeData.DefName, indName: intakeData.IndName, facility: intakeData.DefFacility, timestamp: intakeData.timestamp }));
-        }
-        showSuccess(intakeData);
-    }).catch(function (error) {
-        console.error('Submission error:', error);
-        submitBtn.disabled = false;
-        submitText.classList.remove('hidden');
-        submitLoader.classList.add('hidden');
-        if (tg) { tg.HapticFeedback.notificationOccurred('error'); tg.showAlert('Something went wrong. Please try again or call ' + CONFIG.PHONE); }
-        else { alert('Something went wrong. Please try again or call ' + CONFIG.PHONE); }
-    });
+    gasPost(SHAMROCK_GAS_ENDPOINT, intakeData)
+        .then(function (result) {
+            console.log('[intake] Submission result:', result);
+            // Upload files in parallel
+            var ups = [];
+            if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
+            if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
+            return Promise.all(ups);
+        })
+        .then(function () {
+            if (tg) {
+                tg.sendData(JSON.stringify({
+                    type: 'intake_submitted',
+                    defName: intakeData.DefName,
+                    indName: intakeData.IndName,
+                    facility: intakeData.DefFacility,
+                    timestamp: intakeData.timestamp
+                }));
+            }
+            clearFormSession('intake');
+            showSuccess();
+        })
+        .catch(function (error) {
+            console.error('[intake] Submission error:', error);
+            submitBtn.disabled = false;
+            submitText.classList.remove('hidden');
+            submitLoader.classList.add('hidden');
+            if (tg) {
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert('Something went wrong. Please try again or call ' + SHAMROCK_PHONE);
+            } else {
+                alert('Something went wrong. Please try again or call ' + SHAMROCK_PHONE);
+            }
+        });
 }
 
 function uploadFileToGAS(file, docType, telegramUserId) {
@@ -354,10 +427,13 @@ function uploadFileToGAS(file, docType, telegramUserId) {
             var reader = new FileReader();
             reader.onload = function (e) {
                 var base64 = e.target.result.split(',')[1];
-                fetch(CONFIG.GAS_ENDPOINT, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'telegram_mini_app_upload', telegramUserId: telegramUserId, docType: docType, fileName: file.name, mimeType: file.type, base64Data: base64 }),
-                    mode: 'no-cors'
+                gasPost(SHAMROCK_GAS_ENDPOINT, {
+                    action: 'telegram_mini_app_upload',
+                    telegramUserId: telegramUserId,
+                    docType: docType,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    base64Data: base64
                 }).then(function () { resolve(); }).catch(function () { resolve(); });
             };
             reader.readAsDataURL(file);
@@ -379,18 +455,14 @@ function showSuccess() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHONE FORMATTING & REAL-TIME VALIDATION
+// PHONE FORMATTING — uses brand.js formatPhone() + debounce()
 // ═══════════════════════════════════════════════════════════════════════════
 
 function initPhoneFormatting() {
     document.querySelectorAll('input[type="tel"]').forEach(function (field) {
-        field.addEventListener('input', function (e) {
-            var val = e.target.value.replace(/\D/g, '');
-            if (val.length > 10) val = val.slice(0, 10);
-            if (val.length >= 7) e.target.value = '(' + val.slice(0, 3) + ') ' + val.slice(3, 6) + '-' + val.slice(6);
-            else if (val.length >= 4) e.target.value = '(' + val.slice(0, 3) + ') ' + val.slice(3);
-            else if (val.length > 0) e.target.value = '(' + val;
-        });
+        field.addEventListener('input', debounce(function (e) {
+            e.target.value = formatPhone(e.target.value);
+        }, 100));
     });
 }
 
@@ -413,25 +485,26 @@ function initRealTimeValidation() {
 })();
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Intake-specific Telegram init (extends brand.js with pre-fill)
-    if (tg) {
-        tg.ready();
-        tg.expand();
-        tg.enableClosingConfirmation();
-        document.body.classList.add('tg-themed');
-        tgUser = tg.initDataUnsafe?.user;
-        tgInitData = tg.initData;
-        if (tgUser) {
-            var fn = document.getElementById('indFirstName');
-            var ln = document.getElementById('indLastName');
-            if (fn && !fn.value && tgUser.first_name) fn.value = tgUser.first_name;
-            if (ln && !ln.value && tgUser.last_name) ln.value = tgUser.last_name;
-        }
-        tg.BackButton.hide();
+    // Init Telegram (brand.js handles basics; we add intake-specific prefill)
+    initTelegram();
+    document.body.classList.add('tg-themed');
+
+    // Pre-fill indemnitor name from Telegram user profile
+    if (tgUser) {
+        var fn = document.getElementById('indFirstName');
+        var ln = document.getElementById('indLastName');
+        if (fn && !fn.value && tgUser.first_name) fn.value = tgUser.first_name;
+        if (ln && !ln.value && tgUser.last_name) ln.value = tgUser.last_name;
     }
+    if (tg) tg.BackButton.hide();
+
     initFileUploads();
     initFacilityToggle();
     initPhoneFormatting();
     initRealTimeValidation();
-    console.log('🍀 Shamrock Intake loaded');
+
+    // Restore any saved session
+    restoreIntakeSession();
+
+    console.log('🍀 Shamrock Intake loaded — all brand.js utilities wired');
 });

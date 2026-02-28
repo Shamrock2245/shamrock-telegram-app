@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="../shared/theme.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -252,7 +251,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Photo ID (Front) <span class="optional" style="color:var(--muted);font-size:0.8em;">(optional — can provide later)</span></label>
+                    <label>Photo ID (Front) <span class="optional" style="color:var(--muted);font-size:0.8em;">(optional
+                            — can provide later)</span></label>
                     <div class="file-upload" id="idFrontUpload">
                         <input type="file" id="idFront" name="idFront" accept="image/*" capture="environment">
                         <div class="file-upload-content">
@@ -263,7 +263,9 @@
                         <div class="file-preview hidden" id="idFrontPreview"></div>
                     </div>
                     <p style="text-align:center;margin-top:6px;">
-                        <a href="#" onclick="skipIdUpload(event)" style="color:var(--muted);font-size:0.85em;text-decoration:underline;">Skip — I'll provide my ID later</a>
+                        <a href="#" onclick="skipIdUpload(event)"
+                            style="color:var(--muted);font-size:0.85em;text-decoration:underline;">Skip — I'll provide
+                            my ID later</a>
                     </p>
                 </div>
 
@@ -292,9 +294,12 @@
                     <input type="hidden" id="gpsLat" name="gpsLat">
                     <input type="hidden" id="gpsLng" name="gpsLng">
                     <div class="hidden" id="manualLocationFallback" style="margin-top:10px;">
-                        <p style="color:var(--muted);font-size:0.85em;margin-bottom:6px;">&#128205; We couldn't detect your location automatically.</p>
-                        <input type="text" id="manualCity" placeholder="City, State (e.g. Fort Myers, FL)" style="width:100%;margin-bottom:6px;">
-                        <button type="button" onclick="useManualLocation()" class="btn btn-secondary btn-sm">Use This Location</button>
+                        <p style="color:var(--muted);font-size:0.85em;margin-bottom:6px;">&#128205; We couldn't detect
+                            your location automatically.</p>
+                        <input type="text" id="manualCity" placeholder="City, State (e.g. Fort Myers, FL)"
+                            style="width:100%;margin-bottom:6px;">
+                        <button type="button" onclick="useManualLocation()" class="btn btn-secondary btn-sm">Use This
+                            Location</button>
                     </div>
                 </div>
             </section>
@@ -313,8 +318,10 @@
 
                 <div class="consent-box">
                     <label class="consent-label">
-                        <input type="checkbox" id="consentCheck" name="consent" required style="position:absolute;opacity:0;width:44px;height:44px;cursor:pointer;">
-                        <span class="checkmark" style="min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;"></span>
+                        <input type="checkbox" id="consentCheck" name="consent" required
+                            style="position:absolute;opacity:0;width:44px;height:44px;cursor:pointer;">
+                        <span class="checkmark"
+                            style="min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;"></span>
                         <span class="consent-text">
                             I agree to sign documents electronically, allow location capture at signing,
                             receive text/voice communications about this case, and authorize Shamrock Bail
