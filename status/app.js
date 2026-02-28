@@ -15,7 +15,7 @@
 const STATUS_CONFIG = {
     GAS_ENDPOINT: typeof SHAMROCK_GAS_ENDPOINT !== 'undefined'
         ? SHAMROCK_GAS_ENDPOINT
-        : 'https://script.google.com/macros/s/AKfycby5N-lHvM2XzKnX38KSqekq0ENWMLYqYM2bYxuZcRRAQcBhP3RvBaF0CbQa9gKK73QI4w/exec',
+        : 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec',
     ACTION_LOOKUP: 'telegram_status_lookup'
 };
 

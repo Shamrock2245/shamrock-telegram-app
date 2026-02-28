@@ -10,7 +10,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5N-lHvM2XzKnX38KSqekq0ENWMLYqYM2bYxuZcRRAQcBhP3RvBaF0CbQa9gKK73QI4w/exec';
+const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
 const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 
 /** Documents the defendant needs to sign (subset of full packet) */

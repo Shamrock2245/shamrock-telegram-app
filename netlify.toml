@@ -1,8 +1,17 @@
-# Shamrock Bail Bonds — Telegram Mini Apps
+# Shamrock Bail Bonds — Telegram Mini Apps + AI Platform
 # https://shamrock-telegram.netlify.app
 
 [build]
   publish = "."
+  command = "npm install"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# ═══════════════════════════════════════════════════════
+# HEADERS
+# ═══════════════════════════════════════════════════════
 
 # Telegram WebView requires permissive framing
 [[headers]]
@@ -29,7 +38,66 @@
   [headers.values]
     Cache-Control = "public, max-age=3600"
 
-# SPA-style fallbacks for each mini app
+# ═══════════════════════════════════════════════════════
+# API REDIRECTS — clean /api/* paths to functions
+# ═══════════════════════════════════════════════════════
+
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/ai-concierge"
+  status = 200
+
+[[redirects]]
+  from = "/api/risk-score"
+  to = "/.netlify/functions/risk-score"
+  status = 200
+
+[[redirects]]
+  from = "/api/summarize"
+  to = "/.netlify/functions/intake-summarizer"
+  status = 200
+
+[[redirects]]
+  from = "/api/charges"
+  to = "/.netlify/functions/charge-analyzer"
+  status = 200
+
+[[redirects]]
+  from = "/api/translate"
+  to = "/.netlify/functions/translate"
+  status = 200
+
+[[redirects]]
+  from = "/api/explain"
+  to = "/.netlify/functions/document-explainer"
+  status = 200
+
+[[redirects]]
+  from = "/api/notify"
+  to = "/.netlify/functions/smart-notify"
+  status = 200
+
+[[redirects]]
+  from = "/api/status"
+  to = "/.netlify/functions/status-proxy"
+  status = 200
+
+# ═══════════════════════════════════════════════════════
+# EDGE FUNCTIONS
+# ═══════════════════════════════════════════════════════
+
+[[edge_functions]]
+  function = "county-detect"
+  path = "/*"
+
+[[edge_functions]]
+  function = "language-detect"
+  path = "/*"
+
+# ═══════════════════════════════════════════════════════
+# SPA-STYLE FALLBACKS for each mini app
+# ═══════════════════════════════════════════════════════
+
 [[redirects]]
   from = "/intake/*"
   to = "/intake/index.html"
