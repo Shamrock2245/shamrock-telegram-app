@@ -382,7 +382,10 @@ function submitForm() {
         gpsLongitude: locationData ? locationData.longitude : null,
         manualLocation: locationData ? (locationData.manual || null) : null,
         source: 'telegram_mini_app', platform: 'telegram',
-        timestamp: new Date().toISOString(), consent: true
+        timestamp: new Date().toISOString(),
+        consent: true,
+        consentGiven: true,
+        consentTimestamp: new Date().toISOString()
     };
 
     gasPost(SHAMROCK_GAS_ENDPOINT, intakeData)
