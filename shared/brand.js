@@ -8,9 +8,9 @@
 // TELEGRAM SDK INIT
 // ═══════════════════════════════════════════════════════════════
 
-const tg = window.Telegram?.WebApp;
-const tgUser = tg?.initDataUnsafe?.user;
-const tgInitData = tg?.initData || '';
+var tg = window.Telegram?.WebApp || null;
+var tgUser = tg?.initDataUnsafe?.user || null;
+var tgInitData = tg?.initData || '';
 
 function initTelegram() {
     if (!tg) {
@@ -190,7 +190,7 @@ function clearFormSession(key) {
 // ═══════════════════════════════════════════════════════════════
 function debounce(fn, delay = 300) {
     let timer;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
