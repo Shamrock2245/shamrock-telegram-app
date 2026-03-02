@@ -102,67 +102,106 @@ async function gasPost(endpoint, payload) {
 //   });
 //
 // Sources: 'telegram' | 'coarse' | 'gps'
+//
+// Strategy: Race all available methods in parallel.
+//   - Telegram LocationManager (3s timeout)
+//   - Browser coarse + GPS race simultaneously
+//   - First valid result wins, rest are ignored.
+//   - Total max wall-clock: ~5s before fallback.
 // ═══════════════════════════════════════════════════════════════
 async function captureLocationTiered({ onSuccess, onManualFallback, onStatusUpdate }) {
-    const status = (msg) => { if (onStatusUpdate) onStatusUpdate(msg); };
+    let resolved = false;
+    const done = (lat, lng, source) => {
+        if (resolved) return;
+        resolved = true;
+        if (_locHeartbeat) clearInterval(_locHeartbeat);
+        onSuccess(lat, lng, source);
+    };
+    const status = (msg) => { if (!resolved && onStatusUpdate) onStatusUpdate(msg); };
 
-    // TIER 1: Telegram LocationManager (fastest in mobile Telegram)
-    if (window.Telegram?.WebApp?.LocationManager) {
-        try {
-            status('Requesting Telegram location…');
-            const loc = await new Promise((resolve, reject) => {
-                window.Telegram.WebApp.LocationManager.init(() => {
-                    window.Telegram.WebApp.LocationManager.getLocation((result) => {
-                        result ? resolve(result) : reject(new Error('TG location denied'));
-                    });
-                });
-            });
-            onSuccess(loc.latitude, loc.longitude, 'telegram');
-            return;
-        } catch (e) {
-            console.log('[location] Tier 1 failed:', e.message);
-        }
+    // Progress heartbeat — shows dots so user knows it's alive
+    let _locDots = 0;
+    var _locHeartbeat = setInterval(() => {
+        if (resolved) { clearInterval(_locHeartbeat); return; }
+        _locDots = (_locDots + 1) % 4;
+        status('Getting location' + '.'.repeat(_locDots + 1));
+    }, 400);
+
+    status('Getting location…');
+
+    // Helper: wrap getCurrentPosition in a promise with a hard timeout
+    function geoPromise(highAccuracy, timeoutMs) {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) { reject(new Error('no geolocation')); return; }
+            const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs + 500);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { clearTimeout(timer); resolve(pos); },
+                (err) => { clearTimeout(timer); reject(err); },
+                {
+                    enableHighAccuracy: highAccuracy,
+                    timeout: timeoutMs,
+                    maximumAge: highAccuracy ? 0 : 300000
+                }
+            );
+        });
     }
 
-    if (!navigator.geolocation) {
+    // Build race candidates
+    const candidates = [];
+
+    // CANDIDATE 1: Telegram LocationManager (3s hard timeout)
+    if (window.Telegram?.WebApp?.LocationManager) {
+        candidates.push(
+            new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error('TG timeout')), 3000);
+                try {
+                    window.Telegram.WebApp.LocationManager.init(() => {
+                        window.Telegram.WebApp.LocationManager.getLocation((result) => {
+                            clearTimeout(timer);
+                            if (result) resolve({ lat: result.latitude, lng: result.longitude, source: 'telegram' });
+                            else reject(new Error('TG denied'));
+                        });
+                    });
+                } catch (e) { clearTimeout(timer); reject(e); }
+            })
+        );
+    }
+
+    // CANDIDATE 2: Coarse (network/IP — fast, ~1s)
+    if (navigator.geolocation) {
+        candidates.push(
+            geoPromise(false, 3000).then(pos => ({
+                lat: pos.coords.latitude, lng: pos.coords.longitude, source: 'coarse'
+            }))
+        );
+    }
+
+    // CANDIDATE 3: High-accuracy GPS (mobile, ~2-5s)
+    if (navigator.geolocation) {
+        candidates.push(
+            geoPromise(true, 5000).then(pos => ({
+                lat: pos.coords.latitude, lng: pos.coords.longitude, source: 'gps'
+            }))
+        );
+    }
+
+    if (candidates.length === 0) {
+        clearInterval(_locHeartbeat);
         if (onManualFallback) onManualFallback();
         return;
     }
 
-    // TIER 2: Fast coarse location (network/IP, works on desktop, ~1s)
+    // Race: first valid result wins
+    // Promise.any rejects only if ALL candidates fail
     try {
-        status('Getting location…');
-        const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: false,
-                timeout: 5000,
-                maximumAge: 300000   // accept 5-minute-old cache
-            });
-        });
-        onSuccess(pos.coords.latitude, pos.coords.longitude, 'coarse');
-        return;
+        const winner = await Promise.any(candidates);
+        done(winner.lat, winner.lng, winner.source);
     } catch (e) {
-        console.log('[location] Tier 2 failed:', e.message);
+        // All candidates failed
+        console.log('[location] All tiers failed:', e.message || e);
+        clearInterval(_locHeartbeat);
+        if (onManualFallback) onManualFallback();
     }
-
-    // TIER 3: High-accuracy GPS (mobile only, takes longer)
-    try {
-        status('Getting precise location…');
-        const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 8000,
-                maximumAge: 0
-            });
-        });
-        onSuccess(pos.coords.latitude, pos.coords.longitude, 'gps');
-        return;
-    } catch (e) {
-        console.log('[location] Tier 3 failed:', e.message);
-    }
-
-    // TIER 4: Manual fallback
-    if (onManualFallback) onManualFallback();
 }
 
 // ═══════════════════════════════════════════════════════════════
