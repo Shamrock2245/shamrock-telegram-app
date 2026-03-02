@@ -1,0 +1,12 @@
+{
+    "name": "shamrock-telegram-app",
+    "version": "1.0.0",
+    "description": "Shamrock Bail Bonds — Telegram Mini Apps + AI Platform",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "openai": "^4.0.0",
+        "@netlify/functions": "^2.0.0",
+        "@netlify/blobs": "^7.0.0"
+    }
+}
