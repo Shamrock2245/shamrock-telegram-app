@@ -127,3 +127,38 @@
   from = "/defendant/*"
   to = "/defendant/index.html"
   status = 200
+
+# ═══════════════════════════════════════════════════════
+# BACKGROUND / SCHEDULED FUNCTION ROUTES
+# Wires the 6 functions added in feat: add 4 background risk mitigation features
+# ═══════════════════════════════════════════════════════
+
+[[redirects]]
+  from = "/api/checkin-geo-alert"
+  to = "/.netlify/functions/checkin-geo-alert"
+  status = 200
+
+[[redirects]]
+  from = "/api/compliance-digest"
+  to = "/.netlify/functions/compliance-digest"
+  status = 200
+
+[[redirects]]
+  from = "/api/court-reminder"
+  to = "/.netlify/functions/court-reminder"
+  status = 200
+
+[[redirects]]
+  from = "/api/daily-briefing"
+  to = "/.netlify/functions/daily-briefing"
+  status = 200
+
+[[redirects]]
+  from = "/api/engagement-watchdog"
+  to = "/.netlify/functions/engagement-watchdog"
+  status = 200
+
+[[redirects]]
+  from = "/api/sentiment-watchdog"
+  to = "/.netlify/functions/sentiment-watchdog"
+  status = 200
