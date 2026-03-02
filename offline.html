@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Offline — Shamrock Bail Bonds</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: #0a0f1a;
+            color: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ambient background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 20% 20%, rgba(16, 185, 129, 0.06), transparent),
+                radial-gradient(ellipse 500px 350px at 80% 80%, rgba(245, 158, 11, 0.04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 400px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.3));
+        }
+
+        .icon-offline {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #10B981, #34D399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .call-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 14px;
+            text-decoration: none;
+            min-height: 52px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .call-btn:active {
+            transform: scale(0.97);
+        }
+
+        .retry-btn {
+            display: block;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: transparent;
+            color: #10B981;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .retry-btn:active {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .footer {
+            margin-top: 48px;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/shared/logo.png" alt="Shamrock" class="logo" onerror="this.style.display='none'">
+        <div class="icon-offline">📡</div>
+        <h1>You're Offline</h1>
+        <p>
+            No internet connection right now. Don't worry — you can still reach us directly.
+            We're available 24/7.
+        </p>
+
+        <a href="tel:+12393322245" class="call-btn">
+            📞 Call (239) 332-2245
+        </a>
+
+        <button class="retry-btn" onclick="location.reload()">
+            🔄 Try Again
+        </button>
+
+        <div class="footer">
+            Shamrock Bail Bonds · All 67 Florida Counties · 24/7
+        </div>
+    </div>
+</body>
+</html>
