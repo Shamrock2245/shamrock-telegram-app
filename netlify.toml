@@ -53,6 +53,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/elevenlabs-postcall"
+  to = "/.netlify/functions/elevenlabs-postcall"
+  status = 200
+
+[[redirects]]
   from = "/api/risk-score"
   to = "/.netlify/functions/risk-score"
   status = 200
