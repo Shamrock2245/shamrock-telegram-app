@@ -1,22 +1,22 @@
 /**
  * Sentiment Watchdog — Scheduled Function (Every 4 Hours)
- * Cron: 0 */4 * * *
+ * Cron: 0 star/4 star star star  (every 4 hours)
  *
- * Fetches recent client messages / updates from GAS, runs each through
-    * GPT - 4o - mini stress classifier to detect flight - risk indicators.
+ * Fetches recent client messages/updates from GAS, runs each through
+ * GPT-4o-mini stress classifier to detect flight-risk indicators.
  *
  * Sentiment levels: calm | concerned | stressed | alarmed
-    *
- * "Alarmed" messages auto - escalate to Slack #alerts with full context.
+ *
+ * "Alarmed" messages auto-escalate to Slack #alerts with full context.
  * "Stressed" messages get flagged in the daily briefing.
  *
  * Key stress indicators:
  * - Asking about travel / leaving state
-    * - Inquiring about consequences of missing court
-        * - Requesting early termination / bond cancellation
-            * - Mentions of "running", "disappearing", "warrant"
-                * - Sudden urgency about financial obligations
-                    */
+ * - Inquiring about consequences of missing court
+ * - Requesting early termination / bond cancellation
+ * - Mentions of "running", "disappearing", "warrant"
+ * - Sudden urgency about financial obligations
+ */
 import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
 
 const CLASSIFIER_PROMPT = `You are a bail bond risk analyst. Classify the sentiment of client messages to detect potential flight risk.
