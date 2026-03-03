@@ -1,20 +1,20 @@
 /**
  * Engagement Watchdog — Scheduled Function (Every 2 Hours)
- * Cron: 0 */2 * * *
+ * Cron: 0 star/2 star star star  (every 2 hours)
  *
- * Monitors court date reminder acknowledgments.If a defendant has NOT
-    * acknowledged their court reminder within 12 hours of their hearing,
- * escalates to the co - signer(indemnitor) and alerts staff on Slack.
+ * Monitors court date reminder acknowledgments. If a defendant has NOT
+ * acknowledged their court reminder within 12 hours of their hearing,
+ * escalates to the co-signer (indemnitor) and alerts staff on Slack.
  *
- * This is the #1 ROI risk mitigation feature — FTA(Failure to Appear)
-    * is the single biggest financial risk in bail bonds.
+ * This is the #1 ROI risk mitigation feature — FTA (Failure to Appear)
+ * is the single biggest financial risk in bail bonds.
  *
  * Flow:
  * 1. Fetch unacknowledged court reminders from GAS
-    * 2. Filter to those within 12hrs of hearing
-        * 3. For each: escalate to co - signer via SMS + post Slack alert
-            * 4. Mark case as "High Flight Risk" in GAS tracker
-                */
+ * 2. Filter to those within 12hrs of hearing
+ * 3. For each: escalate to co-signer via SMS + post Slack alert
+ * 4. Mark case as "High Flight Risk" in GAS tracker
+ */
 import { GAS_ENDPOINT } from './shared/ai-client.mjs';
 
 export default async () => {
