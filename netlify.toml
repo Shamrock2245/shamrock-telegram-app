@@ -48,6 +48,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/elevenlabs-init"
+  to = "/.netlify/functions/elevenlabs-init"
+  status = 200
+
+[[redirects]]
   from = "/api/risk-score"
   to = "/.netlify/functions/risk-score"
   status = 200
