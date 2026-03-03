@@ -48,6 +48,20 @@ export default async (request, context) => {
         return new Response(null, { status: 204, headers });
     }
 
+    // ── Webhook Secret Auth ──────────────────────────────────
+    const WEBHOOK_SECRET = process.env.ELEVENLABS_WEBHOOK_SECRET;
+    if (WEBHOOK_SECRET) {
+        const url = new URL(request.url);
+        const provided = request.headers.get('x-webhook-secret')
+            || url.searchParams.get('webhook_secret');
+        if (provided !== WEBHOOK_SECRET) {
+            console.warn('⛔ ElevenLabs init — invalid or missing webhook secret');
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401, headers
+            });
+        }
+    }
+
     try {
         // Parse incoming data from ElevenLabs (POST body or query params)
         let callerId = '';
