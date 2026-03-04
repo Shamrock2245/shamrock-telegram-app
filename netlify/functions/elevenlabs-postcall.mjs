@@ -12,7 +12,9 @@
  * URL: https://shamrock-telegram.netlify.app/api/elevenlabs-postcall
  */
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+// GAS_WEB_APP_URL is the canonical env var — set it once in Netlify dashboard.
+const GAS_URL = process.env.GAS_WEB_APP_URL
+    || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
 
 export default async (request, context) => {
     const headers = { 'Content-Type': 'application/json' };

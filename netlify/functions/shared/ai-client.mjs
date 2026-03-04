@@ -26,8 +26,11 @@ export function getGrok() {
 }
 
 // ── GAS endpoint
-export const GAS_ENDPOINT = process.env.GAS_ENDPOINT
-    || 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+// GAS_WEB_APP_URL is the canonical env var; GAS_ENDPOINT is the legacy alias.
+// Set GAS_WEB_APP_URL in Netlify dashboard — one value, all functions.
+export const GAS_ENDPOINT = process.env.GAS_WEB_APP_URL
+    || process.env.GAS_ENDPOINT
+    || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
 
 // ── CORS headers for Telegram WebView
 export const CORS_HEADERS = {
