@@ -202,27 +202,28 @@
     best-practices = 0.8
     seo = 0.7
 
-  # Audit every mini-app page individually
+  # Audit key pages only — saves ~5 min of build time per deploy
+  # Re-enable others for periodic full audits
   [[plugins.inputs.audits]]
     path = "/"
 
   [[plugins.inputs.audits]]
     path = "intake/"
 
-  [[plugins.inputs.audits]]
-    path = "payment/"
+  # [[plugins.inputs.audits]]
+  #   path = "payment/"
 
-  [[plugins.inputs.audits]]
-    path = "status/"
+  # [[plugins.inputs.audits]]
+  #   path = "status/"
 
-  [[plugins.inputs.audits]]
-    path = "documents/"
+  # [[plugins.inputs.audits]]
+  #   path = "documents/"
 
-  [[plugins.inputs.audits]]
-    path = "defendant/"
+  # [[plugins.inputs.audits]]
+  #   path = "defendant/"
 
-  [[plugins.inputs.audits]]
-    path = "updates/"
+  # [[plugins.inputs.audits]]
+  #   path = "updates/"
 
 # ═══════════════════════════════════════════════════════
 # PERFORMANCE — Aggressive Image Caching (1 year)
