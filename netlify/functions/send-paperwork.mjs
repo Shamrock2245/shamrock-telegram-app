@@ -10,7 +10,7 @@
 const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
 // Shared secret — set SEND_PAPERWORK_SECRET in Netlify env vars.
 // ElevenLabs tool must send: Authorization: Bearer <secret>
-// If the env var is not set, the check is skipped (dev/test mode ).
+// If the env var is not set, the check is skipped (dev/test mode).
 const SHARED_SECRET = process.env.SEND_PAPERWORK_SECRET || null;
 
 export default async (req, context) => {
