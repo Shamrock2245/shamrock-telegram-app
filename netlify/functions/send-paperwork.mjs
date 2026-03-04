@@ -117,6 +117,26 @@ export default async (req, context) => {
             };
         }
 
+        // --- Send signing link via SMS if available ---
+        if (gasResult.success && gasResult.signing_link && data.caller_phone) {
+            try {
+                const smsResult = await sendTwilioSms(
+                    data.caller_phone,
+                    `Shamrock Bail Bonds — Your bail bond paperwork is ready to sign! Tap here to review and sign all documents: ${gasResult.signing_link}\n\nQuestions? Call (239) 332-2245`
+                );
+                if (smsResult.sent) {
+                    console.log('[send-paperwork] SMS sent to', data.caller_phone);
+                    gasResult.sms_sent = true;
+                    // Update message for Shannon to read back
+                    gasResult.message += ` I've also texted you a direct signing link at the number we have on file.`;
+                } else {
+                    console.warn('[send-paperwork] SMS failed:', smsResult.error);
+                }
+            } catch (smsErr) {
+                console.warn('[send-paperwork] SMS error (non-fatal):', smsErr.message);
+            }
+        }
+
         return new Response(JSON.stringify(gasResult), {
             status: 200,
             headers: {
@@ -154,3 +174,52 @@ export default async (req, context) => {
 export const config = {
     path: '/api/send-paperwork'
 };
+
+/**
+ * Send an SMS via Twilio REST API (no SDK needed).
+ * Env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+ * @param {string} to - Recipient phone number
+ * @param {string} body - Message body
+ * @returns {{ sent: boolean, error?: string }}
+ */
+async function sendTwilioSms(to, body) {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+    if (!accountSid || !authToken || !fromNumber) {
+        console.warn('[send-paperwork] Twilio env vars not set — skipping SMS');
+        return { sent: false, error: 'Twilio not configured' };
+    }
+
+    // Clean the phone number — ensure E.164 format
+    let cleanTo = to.replace(/\D/g, '');
+    if (cleanTo.length === 10) cleanTo = '1' + cleanTo;
+    if (!cleanTo.startsWith('+')) cleanTo = '+' + cleanTo;
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams();
+    params.append('To', cleanTo);
+    params.append('From', fromNumber);
+    params.append('Body', body);
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            return { sent: true, sid: result.sid };
+        } else {
+            return { sent: false, error: result.message || `HTTP ${response.status}` };
+        }
+    } catch (err) {
+        return { sent: false, error: err.message };
+    }
+}
