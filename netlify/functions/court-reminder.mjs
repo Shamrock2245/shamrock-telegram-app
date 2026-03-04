@@ -5,7 +5,6 @@
  * Fetches upcoming court dates from GAS, generates AI-personalized
  * reminders, and triggers notifications via GAS.
  */
-import { Config } from '@netlify/functions';
 import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
 
 export default async () => {

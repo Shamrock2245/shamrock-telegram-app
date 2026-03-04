@@ -13,8 +13,8 @@
  */
 
 // GAS_WEB_APP_URL is the canonical env var — set it once in Netlify dashboard.
-const GAS_URL = process.env.GAS_WEB_APP_URL
-    || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
+import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+const GAS_URL = GAS_ENDPOINT;
 
 export default async (request, context) => {
     const headers = { 'Content-Type': 'application/json' };

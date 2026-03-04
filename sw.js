@@ -4,7 +4,7 @@
  * Caches shared design assets for faster repeat loads.
  */
 
-const CACHE_NAME = 'shamrock-v1';
+const CACHE_NAME = 'shamrock-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to pre-cache on install

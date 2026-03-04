@@ -8,7 +8,8 @@
  * Architecture: ElevenLabs Agent → this function → GAS → Slack + Sheet log
  */
 
-const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
+import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+
 const SHARED_SECRET = process.env.SEND_PAPERWORK_SECRET || null;
 
 export default async (req, context) => {
@@ -77,7 +78,7 @@ export default async (req, context) => {
         }
 
         // Forward to GAS
-        const gasUrl = new URL(GAS_WEB_APP_URL);
+        const gasUrl = new URL(GAS_ENDPOINT);
         gasUrl.searchParams.set('source', 'notify_bondsman');
         gasUrl.searchParams.set('data', encodeURIComponent(JSON.stringify(data)));
 

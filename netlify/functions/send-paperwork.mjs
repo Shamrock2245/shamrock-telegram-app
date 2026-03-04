@@ -7,7 +7,8 @@
  * Same pattern as elevenlabs-postcall.mjs.
  */
 
-const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
+import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+
 // Shared secret — set SEND_PAPERWORK_SECRET in Netlify env vars.
 // ElevenLabs tool must send: Authorization: Bearer <secret>
 // If the env var is not set, the check is skipped (dev/test mode).
@@ -85,7 +86,7 @@ export default async (req, context) => {
         }
 
         // Forward to GAS
-        const gasUrl = new URL(GAS_WEB_APP_URL);
+        const gasUrl = new URL(GAS_ENDPOINT);
         gasUrl.searchParams.set('source', 'send_paperwork');
         // encodeURIComponent ensures special chars in names/emails survive the URL round-trip
         gasUrl.searchParams.set('data', encodeURIComponent(JSON.stringify(data)));

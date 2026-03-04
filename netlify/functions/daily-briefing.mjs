@@ -6,7 +6,6 @@
  * PLUS a real-time Forfeiture Countdown section showing bonds
  * at risk of forfeiture, sorted by highest financial exposure.
  */
-import { Config } from '@netlify/functions';
 import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
 
 export default async () => {

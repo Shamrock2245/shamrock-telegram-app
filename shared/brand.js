@@ -64,7 +64,7 @@ function isValidPhone(phone) {
 // GAS ENDPOINT CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const SHAMROCK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+const SHAMROCK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
 const SHAMROCK_PHONE = '(239) 332-2245';
 const SHAMROCK_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 
