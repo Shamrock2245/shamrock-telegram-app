@@ -73,7 +73,7 @@ function buildDialTwiML(callerDigits) {
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
 
     for (const phone of OFFICE_PHONES) {
-        twiml += `<Dial timeout="${phone.timeout}" callerId="+1${callerDigits}">`;
+        twiml += `<Dial timeout="${phone.timeout}" callerId="+${callerDigits}">`;
         twiml += `<Number>${phone.number}</Number>`;
         twiml += '</Dial>';
     }
