@@ -47,10 +47,8 @@
   to = "/.netlify/functions/ai-concierge"
   status = 200
 
-[[redirects]]
-  from = "/api/elevenlabs-init"
-  to = "/.netlify/functions/elevenlabs-init"
-  status = 200
+# elevenlabs-init is now an EDGE function (near-zero cold start)
+# See [[edge_functions]] block below — no redirect needed
 
 [[redirects]]
   from = "/api/elevenlabs-postcall"
@@ -60,6 +58,11 @@
 [[redirects]]
   from = "/api/send-paperwork"
   to = "/.netlify/functions/send-paperwork"
+  status = 200
+
+[[redirects]]
+  from = "/api/notify-bondsman"
+  to = "/.netlify/functions/notify-bondsman"
   status = 200
 
 [[redirects]]
@@ -100,6 +103,10 @@
 # ═══════════════════════════════════════════════════════
 # EDGE FUNCTIONS
 # ═══════════════════════════════════════════════════════
+
+[[edge_functions]]
+  function = "elevenlabs-init"
+  path = "/api/elevenlabs-init"
 
 [[edge_functions]]
   function = "county-detect"
