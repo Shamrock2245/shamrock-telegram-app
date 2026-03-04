@@ -184,3 +184,78 @@
   from = "/api/sentiment-watchdog"
   to = "/.netlify/functions/sentiment-watchdog"
   status = 200
+
+# ═══════════════════════════════════════════════════════
+# LIGHTHOUSE PLUGIN — Automated Quality Gates
+# ═══════════════════════════════════════════════════════
+
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+
+  [plugins.inputs]
+    output_path = "reports/lighthouse.html"
+
+  # Baseline thresholds — tighten as scores improve
+  [plugins.inputs.thresholds]
+    performance = 0.6
+    accessibility = 0.8
+    best-practices = 0.8
+    seo = 0.7
+
+  # Audit every mini-app page individually
+  [[plugins.inputs.audits]]
+    path = "/"
+
+  [[plugins.inputs.audits]]
+    path = "intake/"
+
+  [[plugins.inputs.audits]]
+    path = "payment/"
+
+  [[plugins.inputs.audits]]
+    path = "status/"
+
+  [[plugins.inputs.audits]]
+    path = "documents/"
+
+  [[plugins.inputs.audits]]
+    path = "defendant/"
+
+  [[plugins.inputs.audits]]
+    path = "updates/"
+
+# ═══════════════════════════════════════════════════════
+# PERFORMANCE — Aggressive Image Caching (1 year)
+# ═══════════════════════════════════════════════════════
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ═══════════════════════════════════════════════════════
+# SECURITY HEADERS — Boosts Lighthouse Best Practices
+# ═══════════════════════════════════════════════════════
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
