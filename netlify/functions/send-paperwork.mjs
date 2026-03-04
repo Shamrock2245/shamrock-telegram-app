@@ -8,6 +8,10 @@
  */
 
 const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbzm5zmGVcRm_SNRddBF55_5mxMpmIW2ENmHnxkNJNvbC53IwDqoYhBdTVYQ6FE9Zewk/exec';
+// Shared secret — set SEND_PAPERWORK_SECRET in Netlify env vars.
+// ElevenLabs tool must send: Authorization: Bearer <secret>
+// If the env var is not set, the check is skipped (dev/test mode).
+const SHARED_SECRET = process.env.SEND_PAPERWORK_SECRET || null;
 
 export default async (req, context) => {
     // CORS
@@ -30,6 +34,21 @@ export default async (req, context) => {
     }
 
     try {
+        // --- Shared-secret guard ---
+        // Set SEND_PAPERWORK_SECRET in Netlify env vars and configure the same
+        // value as the Authorization header in the ElevenLabs tool definition.
+        if (SHARED_SECRET) {
+            const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+            const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+            if (provided !== SHARED_SECRET) {
+                console.warn('[send-paperwork] Unauthorized request — bad or missing secret');
+                return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+        }
+
         // Parse the incoming request from ElevenLabs
         let body;
         try {
@@ -68,7 +87,8 @@ export default async (req, context) => {
         // Forward to GAS
         const gasUrl = new URL(GAS_WEB_APP_URL);
         gasUrl.searchParams.set('source', 'send_paperwork');
-        gasUrl.searchParams.set('data', JSON.stringify(data));
+        // encodeURIComponent ensures special chars in names/emails survive the URL round-trip
+        gasUrl.searchParams.set('data', encodeURIComponent(JSON.stringify(data)));
 
         console.log('[send-paperwork] Forwarding to GAS...');
 
