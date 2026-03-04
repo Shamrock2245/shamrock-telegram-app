@@ -120,6 +120,10 @@
   path = "/api/elevenlabs-init"
 
 [[edge_functions]]
+  function = "twilio-voice-inbound"
+  path = "/api/twilio-voice"
+
+[[edge_functions]]
   function = "county-detect"
   path = "/*"
 
