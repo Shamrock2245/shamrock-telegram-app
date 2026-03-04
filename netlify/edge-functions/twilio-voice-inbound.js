@@ -24,6 +24,13 @@ const EXACT_WHITELIST = new Set([
     '12394771700',   // Sheriff admin
     // Known direct lines
     '12393368019',   // Known jail-related
+    // Jail collect call numbers (GTL / facility-specific)
+    '12393373135',   // Jail collect
+    '12393396443',   // Jail collect
+    '12393547068',   // Jail collect
+    '19416212140',   // Jail collect (Charlotte County area)
+    '19415319469',   // Jail collect (Sarasota/Charlotte area)
+    '19412100540',   // Jail collect (Sarasota/Charlotte area)
     // GTL / ConnectNetwork / ViaPath (Lee County inmate call provider)
     '18667329098',   // GTL customer service
     '18776504249',   // GTL billing
