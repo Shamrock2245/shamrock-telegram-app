@@ -5,7 +5,7 @@
  * Body: { defendant: {...}, indemnitor: {...}, charges: string, bondAmount: string, ... }
  * Returns: { summary: string, priority: "urgent|normal|low", tags: string[] }
  */
-import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are a bail bond office assistant. Summarize new intake submissions for the staff Slack channel.
 
@@ -20,6 +20,9 @@ Return ONLY valid JSON.`;
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'intake-summarizer');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body) return errorResponse('Missing request body', 400);

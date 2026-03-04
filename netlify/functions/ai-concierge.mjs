@@ -5,7 +5,7 @@
  * Body: { messages: [{ role, content }], sessionId?: string }
  * Returns: Streamed chat completion
  */
-import { getOpenAI, CORS_HEADERS, handleOptions, errorResponse, parseBody } from './shared/ai-client.mjs';
+import { getOpenAI, CORS_HEADERS, handleOptions, errorResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are the Shamrock Bail Bonds AI Concierge — a calm, professional, and compassionate assistant helping families navigate the bail process in Florida.
 
@@ -33,6 +33,9 @@ RULES:
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'ai-concierge', 10);
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.messages || !Array.isArray(body.messages)) {

@@ -5,7 +5,7 @@
  * Body: { charges: string, address: string, age?: number, priors?: string, employment?: string }
  * Returns: { score: 0-100, risk: "low|medium|high", explanation: string, factors: string[] }
  */
-import { getGrok, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getGrok, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are an expert bail bond underwriter for Shamrock Bail Bonds in Florida. Your job is to assess flight risk for bail bond applicants.
 
@@ -29,6 +29,9 @@ ALWAYS return valid JSON. No markdown, no code blocks, just the JSON object.`;
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'risk-score');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.charges) {

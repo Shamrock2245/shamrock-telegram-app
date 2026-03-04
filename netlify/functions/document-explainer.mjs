@@ -5,7 +5,7 @@
  * Body: { documentType: string, conditions: string[], bondAmount?: string, charges?: string }
  * Returns: { explanation: string, warnings: string[], keyDates: string[] }
  */
-import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are a bail bond explainer for Shamrock Bail Bonds. Your job is to explain bail bond documents and conditions in simple, plain language that anyone can understand — even if they're stressed, scared, and reading on a phone.
 
@@ -21,6 +21,9 @@ Return ONLY valid JSON.`;
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'document-explainer');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.documentType) {

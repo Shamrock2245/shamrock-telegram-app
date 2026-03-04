@@ -8,6 +8,33 @@
  *   GAS_ENDPOINT    — Google Apps Script web app URL
  */
 import OpenAI from 'openai';
+import { checkLimit } from './rate-limiter.mjs';
+
+// Re-export for direct use
+export { checkLimit };
+
+// ── Rate limit guard — returns a 429 Response if exceeded, or null if OK
+export async function checkRateLimit(req, functionName, maxRequests = 20) {
+    const { allowed, remaining, resetAt } = await checkLimit(req, functionName, maxRequests);
+    if (!allowed) {
+        const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
+        return new Response(JSON.stringify({
+            error: 'Too many requests. Please try again shortly.',
+            retryAfter,
+        }), {
+            status: 429,
+            headers: {
+                ...CORS_HEADERS,
+                'Content-Type': 'application/json',
+                'Retry-After': String(retryAfter),
+                'X-RateLimit-Limit': String(maxRequests),
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+            },
+        });
+    }
+    return null; // Allowed — proceed
+}
 
 // ── OpenAI client (auto-uses OPENAI_API_KEY + OPENAI_BASE_URL if AI Gateway is on)
 export function getOpenAI() {

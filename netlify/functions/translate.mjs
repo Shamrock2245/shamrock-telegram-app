@@ -5,7 +5,7 @@
  * Body: { text: string, targetLang: "es" | "ht" | "en", context?: "legal" | "general" }
  * Returns: { translated: string, sourceLang: string, targetLang: string }
  */
-import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const LANG_MAP = {
     es: 'Spanish',
@@ -18,6 +18,9 @@ const LANG_MAP = {
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'translate');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.text || !body?.targetLang) {

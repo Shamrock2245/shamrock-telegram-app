@@ -5,7 +5,7 @@
  * Body: { name: string, type: "court-reminder"|"check-in"|"payment-due"|"forfeiture-warning"|"welcome", details: {...} }
  * Returns: { message: string, sms: string, urgency: "low"|"medium"|"high" }
  */
-import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getOpenAI, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are a notification writer for Shamrock Bail Bonds. Generate personalized, human-sounding notifications.
 
@@ -28,6 +28,9 @@ Return ONLY valid JSON.`;
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'smart-notify');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.name || !body?.type) {

@@ -10,6 +10,17 @@
   node_bundler = "esbuild"
 
 # ═══════════════════════════════════════════════════════
+# DEPLOY CONTEXT — Lock production to main branch
+# ═══════════════════════════════════════════════════════
+
+[context.production]
+  branch = "main"
+
+[context.deploy-preview]
+  # Only generate previews for PRs targeting main
+  branch = "main"
+
+# ═══════════════════════════════════════════════════════
 # HEADERS
 # ═══════════════════════════════════════════════════════
 
@@ -259,4 +270,16 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-XSS-Protection = "1; mode=block"
+
+# ═══════════════════════════════════════════════════════
+# CORS — Tighter origin policy for API routes
+# ═══════════════════════════════════════════════════════
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "https://shamrock-telegram.netlify.app"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "POST, OPTIONS"
 

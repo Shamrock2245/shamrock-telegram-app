@@ -5,7 +5,7 @@
  * Body: { charges: "string of charges from booking sheet" }
  * Returns: { parsed: [{ code, statute, description, severity, category, bondRange }] }
  */
-import { getGrok, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { getGrok, handleOptions, errorResponse, jsonResponse, parseBody, checkRateLimit } from './shared/ai-client.mjs';
 
 const SYSTEM_PROMPT = `You are a Florida criminal law expert specializing in bail bonds. Parse criminal charges from booking sheets.
 
@@ -24,6 +24,9 @@ Return ONLY valid JSON. If you cannot identify a charge, include it with severit
 export default async (req) => {
     if (req.method === 'OPTIONS') return handleOptions();
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
+
+    const rateLimited = await checkRateLimit(req, 'charge-analyzer');
+    if (rateLimited) return rateLimited;
 
     const body = await parseBody(req);
     if (!body?.charges) {
