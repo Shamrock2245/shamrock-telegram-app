@@ -82,6 +82,11 @@ export default async (req, context) => {
         gasUrl.searchParams.set('source', 'notify_bondsman');
         gasUrl.searchParams.set('data', encodeURIComponent(JSON.stringify(data)));
 
+        // Add shared secret for GAS-side verification
+        if (process.env.ELEVENLABS_TOOL_SECRET) {
+            gasUrl.searchParams.set('secret', process.env.ELEVENLABS_TOOL_SECRET);
+        }
+
         console.log('[notify-bondsman] Forwarding to GAS...');
 
         const controller = new AbortController();
