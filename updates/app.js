@@ -69,7 +69,7 @@ function bindEvents() {
     phoneInput.addEventListener('input', debounce((e) => {
         e.target.value = formatPhone(e.target.value);
         validateIdentity();
-    });
+    }));
     document.getElementById('lookupName').addEventListener('input', validateIdentity);
     document.getElementById('btnContinueIdentity').addEventListener('click', handleIdentityContinue);
 
@@ -200,47 +200,52 @@ async function submitUpdate(type) {
     // Collect form data based on type
     const formData = collectFormData(type);
 
-    // Send to GAS — use text/plain to avoid CORS preflight
-    try {
-        await gasPost(UPDATE_CONFIG.GAS_ENDPOINT, {
-            action: UPDATE_CONFIG.ACTION,
-            referenceId: state.referenceId,
-            updateType: type,
-            isAnonymous: state.isAnonymous,
-            name: state.isAnonymous ? 'ANONYMOUS' : state.name,
-            phone: state.isAnonymous ? '' : state.phone.replace(/\D/g, ''),
-            formData: formData,
-            telegramUserId: state.isAnonymous ? '' : (tgUser?.id?.toString() || ''),
-            telegramUsername: state.isAnonymous ? '' : (tgUser?.username || ''),
-            source: 'telegram_mini_app',
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.log('Update submission (non-fatal):', err.message);
+    // 1. Immediately show success to make the UI feel fast
+    if (type === 'anonymous_tip') {
+        document.getElementById('successTitle').textContent = 'Tip Received';
+        document.getElementById('successMsg').textContent =
+            'Thank you. Your anonymous tip has been securely submitted. Our team will investigate.';
+    } else if (type === 'extension') {
+        document.getElementById('successTitle').textContent = 'Extension Requested';
+        document.getElementById('successMsg').textContent =
+            'Your payment extension request has been submitted. Our team will review and contact you.';
+    } else {
+        document.getElementById('successTitle').textContent = 'Update Submitted!';
+        document.getElementById('successMsg').textContent =
+            'Thank you, ' + state.name + '. Your update has been received and our team will review it.';
     }
 
-    // Show success
-    setTimeout(() => {
-        if (type === 'anonymous_tip') {
-            document.getElementById('successTitle').textContent = 'Tip Received';
-            document.getElementById('successMsg').textContent =
-                'Thank you. Your anonymous tip has been securely submitted. Our team will investigate.';
-        } else if (type === 'extension') {
-            document.getElementById('successTitle').textContent = 'Extension Requested';
-            document.getElementById('successMsg').textContent =
-                'Your payment extension request has been submitted. Our team will review and contact you.';
-        } else {
-            document.getElementById('successTitle').textContent = 'Update Submitted!';
-            document.getElementById('successMsg').textContent =
-                'Thank you, ' + state.name + '. Your update has been received and our team will review it.';
+    document.getElementById('refId').textContent = state.referenceId;
+    goToStep('stepSuccess');
+
+    if (tg) {
+        tg.HapticFeedback.notificationOccurred('success');
+        tg.BackButton.hide();
+    }
+
+    // 2. Fire telemetry and uploads in the background
+    (async () => {
+        // Send to GAS — use text/plain to avoid CORS preflight
+        try {
+            await gasPost(UPDATE_CONFIG.GAS_ENDPOINT, {
+                action: UPDATE_CONFIG.ACTION,
+                referenceId: state.referenceId,
+                updateType: type,
+                isAnonymous: state.isAnonymous,
+                name: state.isAnonymous ? 'ANONYMOUS' : state.name,
+                phone: state.isAnonymous ? '' : state.phone.replace(/\D/g, ''),
+                formData: formData,
+                telegramUserId: state.isAnonymous ? '' : (tgUser?.id?.toString() || ''),
+                telegramUsername: state.isAnonymous ? '' : (tgUser?.username || ''),
+                source: 'telegram_mini_app',
+                timestamp: new Date().toISOString()
+            });
+        } catch (err) {
+            console.log('Update submission (non-fatal):', err.message);
         }
 
-        document.getElementById('refId').textContent = state.referenceId;
-        goToStep('stepSuccess');
-
+        // Finalize
         if (tg) {
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.BackButton.hide();
             try {
                 tg.sendData(JSON.stringify({
                     action: 'client_update',
@@ -252,11 +257,11 @@ async function submitUpdate(type) {
                 console.log('tg.sendData:', err);
             }
         }
+    })();
 
-        btn.disabled = false;
-        if (btnText) btnText.classList.remove('hidden');
-        if (btnLoader) btnLoader.classList.add('hidden');
-    }, 800);
+    btn.disabled = false;
+    if (btnText) btnText.classList.remove('hidden');
+    if (btnLoader) btnLoader.classList.add('hidden');
 }
 
 // ═══════════════════════════════════════════════════════════════

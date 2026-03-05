@@ -313,64 +313,74 @@ async function submitCheckin() {
 
     state.referenceId = 'CHK-' + Date.now().toString(36).toUpperCase();
 
-    // Log check-in to GAS
-    try {
-        await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
-            action: PAYMENT_CONFIG.ACTION_CHECKIN_LOG,
-            referenceId: state.referenceId,
-            name: state.name,
-            phone: state.phone.replace(/\D/g, ''),
-            hasSelfie: !!state.selfieBase64,
-            latitude: state.latitude,
-            longitude: state.longitude,
-            telegramUserId: tgUser?.id?.toString() || '',
-            telegramUsername: tgUser?.username || '',
-            source: 'telegram_mini_app',
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.log('Check-in log (non-fatal):', err.message);
-    }
-    // Upload selfie BEFORE tg.sendData (sendData closes the WebView)
-    if (state.selfieBase64) {
-        try {
-            if (btnText) btnText.textContent = 'Uploading photo...';
-            await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
-                action: 'telegram_mini_app_upload',
-                telegramUserId: tgUser?.id?.toString() || '',
-                docType: 'checkin_selfie',
-                fileName: `checkin_${state.referenceId}.jpg`,
-                mimeType: state.selfieFile?.type || 'image/jpeg',
-                base64Data: state.selfieBase64.split(',')[1]
-            });
-        } catch (err) {
-            console.log('Selfie upload (non-fatal):', err.message);
-        }
-    }
-    // Clear session after successful checkin
+    // 1. Immediately show success to make the UI feel fast
     clearFormSession('payment');
-    // Show success then send data to bot
     document.getElementById('successTitle').textContent = 'Check-In Complete!';
     document.getElementById('successMsg').textContent =
         'Thank you, ' + state.name + '. Your check-in has been recorded.';
     document.getElementById('refId').textContent = state.referenceId;
     goToStep('stepSuccess');
+
     if (tg) {
         tg.HapticFeedback.notificationOccurred('success');
         tg.BackButton.hide();
+    }
+
+    // 2. Fire telemetry and uploads in the background
+    (async () => {
+        // Log check-in to GAS
         try {
-            tg.sendData(JSON.stringify({
-                action: 'checkin_completed',
+            await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+                action: PAYMENT_CONFIG.ACTION_CHECKIN_LOG,
                 referenceId: state.referenceId,
                 name: state.name,
-                phone: state.phone,
+                phone: state.phone.replace(/\D/g, ''),
+                hasSelfie: !!state.selfieBase64,
                 latitude: state.latitude,
-                longitude: state.longitude
-            }));
+                longitude: state.longitude,
+                telegramUserId: tgUser?.id?.toString() || '',
+                telegramUsername: tgUser?.username || '',
+                source: 'telegram_mini_app',
+                timestamp: new Date().toISOString()
+            });
         } catch (err) {
-            console.log('tg.sendData:', err);
+            console.log('Check-in log (non-fatal):', err.message);
         }
-    }
+
+        // Upload selfie
+        if (state.selfieBase64) {
+            try {
+                if (btnText) btnText.textContent = 'Uploading photo...';
+                await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+                    action: 'telegram_mini_app_upload',
+                    telegramUserId: tgUser?.id?.toString() || '',
+                    docType: 'checkin_selfie',
+                    fileName: `checkin_${state.referenceId}.jpg`,
+                    mimeType: state.selfieFile?.type || 'image/jpeg',
+                    base64Data: state.selfieBase64.split(',')[1]
+                });
+            } catch (err) {
+                console.log('Selfie upload (non-fatal):', err.message);
+            }
+        }
+
+        // Finalize
+        if (tg) {
+            try {
+                tg.sendData(JSON.stringify({
+                    action: 'checkin_completed',
+                    referenceId: state.referenceId,
+                    name: state.name,
+                    phone: state.phone,
+                    latitude: state.latitude,
+                    longitude: state.longitude
+                }));
+            } catch (err) {
+                console.log('tg.sendData:', err);
+            }
+        }
+    })();
+
     btn.disabled = false;
     if (btnText) btnText.textContent = 'Submit Check-In';
     btnText.classList.remove('hidden');
