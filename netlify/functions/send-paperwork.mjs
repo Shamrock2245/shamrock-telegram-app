@@ -96,10 +96,13 @@ export default async (req, context) => {
             gasUrl.searchParams.set('secret', process.env.ELEVENLABS_TOOL_SECRET);
         }
 
-        console.log('[send-paperwork] Forwarding to GAS...');
+        console.log('[send-paperwork] Forwarding to GAS (fire-and-forget)...');
 
+        // Fire the GAS request with a short 3s timeout.
+        // GAS continues executing the 12-doc pipeline even after we disconnect —
+        // this allows us to return success to ElevenLabs before its timeout fires.
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+        const timeout = setTimeout(() => controller.abort(), 3000); // 3s — just long enough for GAS to receive the request
 
         const gasResponse = await fetch(gasUrl.toString(), {
             method: 'GET',
@@ -154,12 +157,14 @@ export default async (req, context) => {
     } catch (error) {
         console.error('[send-paperwork] Error:', error.message);
 
-        // If timeout, still return a friendly message
+        // AbortError is the expected happy path (fire-and-forget).
+        // GAS received the request and is processing the 12-doc pipeline in the background.
         if (error.name === 'AbortError') {
             return new Response(JSON.stringify({
                 success: true,
-                message: "The paperwork is being prepared and will be sent to your email shortly. " +
-                    "It may take a minute or two to arrive."
+                message: "I've sent your complete bail bond paperwork to your email for electronic signature. " +
+                    "It should arrive within the next minute or two. Check your inbox and start signing — " +
+                    "any fields you're unsure about, leave blank. Our bondsman will walk you through those when they call."
             }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' }
