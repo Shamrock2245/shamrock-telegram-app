@@ -139,11 +139,20 @@ export default async (request, context) => {
     }
 
     // ❌ NOT WHITELISTED (or fallback) — Route to ElevenLabs AI
-    console.log(`🤖 AI ROUTE — connecting to Shannon`);
+    console.log(`🤖 AI ROUTE — selecting agent (Shannon or Eric)...`);
 
     try {
-        const agentId = Deno.env.get('ELEVENLABS_AGENT_ID') || 'agent_2001kjth4na5ftqvdf1pp3gfb1cb';
+        // ── Route to ElevenLabs AI ──────────────────────────────────────
+        // Randomly rotate between Shannon (female) and Eric (male) on each call.
+        // Both agents have the same role — callers get variety.
+        const AGENT_IDS = [
+            Deno.env.get('ELEVENLABS_AGENT_ID') || 'agent_2001kjth4na5ftqvdf1pp3gfb1cb',  // Shannon
+            Deno.env.get('ELEVENLABS_AGENT_ID_2') || 'agent_5601kjwvbc4pf92snj0yr44fbpvd', // Eric
+        ];
+        const agentId = AGENT_IDS[Math.floor(Math.random() * AGENT_IDS.length)];
         const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
+
+        console.log(`🎙️ Selected agent: ${agentId === AGENT_IDS[0] ? 'Shannon' : 'Eric'}`);
 
         if (!apiKey) {
             console.error('❌ ELEVENLABS_API_KEY not set!');
