@@ -55,9 +55,14 @@ export function getGrok() {
 // ── GAS endpoint
 // GAS_WEB_APP_URL is the canonical env var; GAS_ENDPOINT is the legacy alias.
 // Set GAS_WEB_APP_URL in Netlify dashboard — one value, all functions.
-export const GAS_ENDPOINT = process.env.GAS_WEB_APP_URL
-    || process.env.GAS_ENDPOINT
-    || 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+//
+// NOTE: No hardcoded fallback. A missing env var must fail loudly so misconfigured
+// deploys are caught immediately rather than silently routing to a stale/wrong URL.
+const _gasUrl = process.env.GAS_WEB_APP_URL || process.env.GAS_ENDPOINT;
+if (!_gasUrl) {
+    console.error('[ai-client] FATAL: GAS_WEB_APP_URL is not set. All GAS-dependent functions will fail.');
+}
+export const GAS_ENDPOINT = _gasUrl || 'MISSING_GAS_WEB_APP_URL';
 
 // ── CORS headers for Telegram WebView
 export const CORS_HEADERS = {
