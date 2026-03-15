@@ -2,9 +2,9 @@
 
 **Live URL**: [shamrock-telegram.netlify.app](https://shamrock-telegram.netlify.app)
 
-Four production Mini Apps for the Shamrock Bail Bonds Telegram bot (`@ShamrockBail_bot`), built for mobile-first crisis situations.
+Seven production Mini Apps for the Shamrock Bail Bonds Telegram bot (`@ShamrockBail_bot`), plus 17 Netlify serverless functions and 3 edge functions for AI, compliance, and voice.
 
-> **Last verified**: 2026-02-26 — All 7 backend handlers confirmed operational.
+> **Last verified**: 2026-03-15 — All handlers confirmed operational.
 
 ## Mini Apps
 
@@ -12,6 +12,8 @@ Four production Mini Apps for the Shamrock Bail Bonds Telegram bot (`@ShamrockBa
 |-----|------|--------|-------------|
 | 🏠 Hub | `/` | ✅ Live | Central navigation to all Mini Apps |
 | 📋 Intake | `/intake/` | ✅ Live | Quick bail intake form (defendant + indemnitor info, document uploads, GPS) |
+| 👤 Defendant | `/defendant/` | ✅ Live | Defendant self-service portal (appearance app, check-in, court dates) |
+| 📄 Documents | `/documents/` | ✅ Live | View, sign, and download case documents via SignNow |
 | 💳 Payment | `/payment/` | ✅ Live | Make payments, check-ins with selfie + GPS logging |
 | 📊 Status | `/status/` | ✅ Live | Case status lookup (court dates, payments, charges from real GAS data) |
 | 📝 Updates | `/updates/` | ✅ Live | Update contact info, address, request payment extensions, anonymous tips |
@@ -28,6 +30,14 @@ shamrock-telegram-app/
 │   ├── index.html          # 5-step intake form
 │   ├── app.js              # Multi-step intake → GAS doPost
 │   └── styles.css          # Intake-specific styles
+├── defendant/
+│   ├── index.html          # Defendant self-service portal
+│   ├── app.js              # Appearance app, check-in, court dates
+│   └── styles.css          # Defendant-specific styles
+├── documents/
+│   ├── index.html          # Document viewer + signing
+│   ├── app.js              # SignNow integration, download PDFs
+│   └── styles.css          # Documents-specific styles
 ├── payment/
 │   ├── index.html          # Payment & check-in flow
 │   ├── app.js              # Dual payment/check-in flow → GAS
@@ -40,6 +50,9 @@ shamrock-telegram-app/
 │   ├── index.html          # 5 update types + anonymous tips
 │   ├── app.js              # Contact/address/extension/circumstances updates → GAS
 │   └── styles.css          # Updates-specific styles
+├── netlify/
+│   ├── edge-functions/     # 3 edge functions (elevenlabs-init, county-detect, twilio-voice)
+│   └── functions/          # 17 serverless functions
 └── netlify.toml            # Hosting config, CORS, SPA redirects
 ```
 
@@ -73,9 +86,39 @@ All Mini Apps communicate with the Google Apps Script backend via `fetch` to the
 - **Frontend**: Hosted on **Netlify** — auto-deploys from `main` branch
   - Permissive framing headers (`X-Frame-Options: ALLOWALL`) for Telegram WebViews
   - Static asset caching (1 hour)
-  - SPA-style redirects for all 4 Mini App paths
+  - SPA-style redirects for all 7 Mini App paths
 - **Backend**: Google Apps Script — deployed as web app
 - **Webhook**: Registered via `registerWebhook.js` → Wix `telegram-webhook.jsw` → GAS `doPost`
+
+## Netlify Serverless Functions (17)
+
+| Function | Purpose |
+|----------|---------|
+| `ai-concierge.mjs` | AI chat assistant (GPT-4o via GAS) |
+| `charge-analyzer.mjs` | Criminal charge analysis + bail estimates |
+| `checkin-geo-alert.mjs` | Geo-fenced check-in validation |
+| `compliance-digest.mjs` | Automated compliance reports → Slack |
+| `court-reminder.mjs` | Court date reminders (48h lookahead) |
+| `daily-briefing.mjs` | Daily ops stats + forfeiture report → Slack |
+| `document-explainer.mjs` | AI document explanation for clients |
+| `elevenlabs-postcall.mjs` | Post-call transcript processing |
+| `engagement-watchdog.mjs` | Escalate unacknowledged court reminders |
+| `intake-summarizer.mjs` | Summarize intake submissions |
+| `notify-bondsman.mjs` | Priority notifications to bondsmen |
+| `risk-score.mjs` | Real-time risk scoring |
+| `send-paperwork.mjs` | Trigger SignNow packet from Shannon calls |
+| `sentiment-watchdog.mjs` | Client sentiment analysis → flag stress |
+| `smart-notify.mjs` | Intelligent notification routing |
+| `status-proxy.mjs` | Cached status lookups via GAS |
+| `translate.mjs` | Multi-language translation |
+
+## Netlify Edge Functions (3)
+
+| Function | Purpose |
+|----------|---------|
+| `elevenlabs-init.js` | Shannon voice AI session initialization (avoids GAS 302) |
+| `county-detect.js` | Client IP → county geolocation |
+| `twilio-voice-inbound.js` | Inbound voice call routing |
 
 ## Testing
 
@@ -84,6 +127,8 @@ Open the bot in Telegram: [@ShamrockBail_bot](https://t.me/ShamrockBail_bot)
 Or access Mini Apps directly:
 - Hub: https://shamrock-telegram.netlify.app
 - Intake: https://shamrock-telegram.netlify.app/intake/
+- Defendant: https://shamrock-telegram.netlify.app/defendant/
+- Documents: https://shamrock-telegram.netlify.app/documents/
 - Payment: https://shamrock-telegram.netlify.app/payment/
 - Status: https://shamrock-telegram.netlify.app/status/
 - Updates: https://shamrock-telegram.netlify.app/updates/
