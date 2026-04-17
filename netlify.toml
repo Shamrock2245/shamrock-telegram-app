@@ -131,6 +131,10 @@
   function = "language-detect"
   path = "/*"
 
+[[edge_functions]]
+  function = "gas-proxy"
+  path = "/api/gas-proxy"
+
 # ═══════════════════════════════════════════════════════
 # SPA-STYLE FALLBACKS for each mini app
 # ═══════════════════════════════════════════════════════
