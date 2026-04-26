@@ -30,6 +30,16 @@ const CITY_TO_COUNTY = {
 };
 
 export default async (request, context) => {
+    // Skip geo-detection for API calls and CORS preflights.
+    // county-detect runs on /* which includes /api/* paths.
+    // Calling context.next() on an OPTIONS request that returns 204
+    // causes a Deno edge runtime crash when trying to set headers on
+    // a no-content response. Pass through immediately for these cases.
+    const url = new URL(request.url);
+    if (request.method === 'OPTIONS' || url.pathname.startsWith('/api/')) {
+        return context.next();
+    }
+
     const geo = context.geo;
     const response = await context.next();
 
