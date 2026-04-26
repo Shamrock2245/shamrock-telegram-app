@@ -281,13 +281,15 @@
     X-XSS-Protection = "1; mode=block"
 
 # ═══════════════════════════════════════════════════════
-# CORS — Tighter origin policy for API routes
+# CORS — Open policy for API routes
+# Wix backend (server-side wix-fetch), Telegram WebView, and browser
+# clients all need to POST here from varying origins.
+# The edge functions enforce their own auth (X-GAS-API-Key).
 # ═══════════════════════════════════════════════════════
-
 [[headers]]
   for = "/api/*"
   [headers.values]
-    Access-Control-Allow-Origin = "https://shamrock-telegram.netlify.app"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Allow-Methods = "POST, OPTIONS"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, X-GAS-API-Key"
+    Access-Control-Allow-Methods = "POST, GET, OPTIONS"
 
