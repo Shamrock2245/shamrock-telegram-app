@@ -141,7 +141,7 @@ const PACKET_DOCS = [
 // STATE
 // ═══════════════════════════════════════════════════════════════
 
-let currentCase = null;
+let currentCase = null;      // Full case data from GAS lookup (includes surety_id)
 let uploadedFiles = [];
 
 // ═══════════════════════════════════════════════════════════════
@@ -211,8 +211,10 @@ async function lookupDocuments() {
             throw new Error(data.error || 'Case not found. Check your case number and try again.');
         }
 
+        // Persist surety_id from lookup response so signing URL requests use correct templates
         currentCase = data;
-        renderPacket(data);
+        currentCase.surety_id = (data.caseData && data.caseData.surety_id) ? data.caseData.surety_id : 'osi';
+        renderPacket(data.caseData || data);
 
     } catch (err) {
         errorEl.textContent = err.message;
@@ -375,8 +377,10 @@ async function openSigning(docId) {
     try {
         const params = new URLSearchParams({
             action: 'telegram_get_signing_url',
-            caseNumber: currentCase.caseNumber,
-            documentId: docId
+            caseNumber: currentCase.caseNumber || (currentCase.caseData && currentCase.caseData.caseNumber) || '',
+            documentId: docId,
+            // Pass surety_id so GAS resolves the correct OSI or Palmetto template
+            surety_id: currentCase.surety_id || 'osi'
         });
 
         const response = await fetch(`${GAS_ENDPOINT}?${params}`);

@@ -70,7 +70,10 @@ export default async (req, context) => {
             caller_email: body.caller_email || body.parameters?.caller_email || '',
             caller_phone: body.caller_phone || body.parameters?.caller_phone || '',
             defendant_name: body.defendant_name || body.parameters?.defendant_name || '',
-            county: body.county || body.parameters?.county || ''
+            county: body.county || body.parameters?.county || '',
+            // Surety routing — 'osi' (default) or 'palmetto'
+            // Shannon can collect this during the call; defaults to 'osi' if not provided
+            surety_id: (body.surety_id || body.parameters?.surety_id || 'osi').toLowerCase()
         };
 
         console.log('[send-paperwork] Extracted data:', JSON.stringify(data));

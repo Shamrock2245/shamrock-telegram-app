@@ -38,6 +38,8 @@ function saveIntakeSession() {
         indJobTitle: gv('indJobTitle'),
         ref1Name: gv('ref1Name'), ref1Phone: gv('ref1Phone'), ref1Relation: gv('ref1Relation'),
         ref2Name: gv('ref2Name'), ref2Phone: gv('ref2Phone'), ref2Relation: gv('ref2Relation'),
+        surety_id: gv('suretyId') || 'osi',
+        suretyId: gv('suretyId') || 'osi',
         locationData: locationData
     });
 }
@@ -51,7 +53,8 @@ function restoreIntakeSession() {
         'indFirstName', 'indLastName', 'indDOB', 'indRelation',
         'indPhone', 'indEmail', 'indAddress', 'indEmployer', 'indJobTitle',
         'ref1Name', 'ref1Phone', 'ref1Relation',
-        'ref2Name', 'ref2Phone', 'ref2Relation'
+        'ref2Name', 'ref2Phone', 'ref2Relation',
+        'suretyId'
     ];
     fields.forEach(function (id) {
         var el = document.getElementById(id);
@@ -381,6 +384,8 @@ function submitForm() {
         gpsLatitude: locationData ? locationData.latitude : null,
         gpsLongitude: locationData ? locationData.longitude : null,
         manualLocation: locationData ? (locationData.manual || null) : null,
+        // Surety company routing — defaults to 'osi'; staff can override via dashboard before paperwork is sent
+        surety_id: gv('suretyId') || 'osi',
         source: 'telegram_mini_app', platform: 'telegram',
         timestamp: new Date().toISOString(),
         consent: true,
