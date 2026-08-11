@@ -10,7 +10,10 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+// Stable factory URL — must match shared/brand.js SHAMROCK_GAS_ENDPOINT and Netlify GAS_WEB_APP_URL
+const GAS_ENDPOINT = (typeof SHAMROCK_GAS_ENDPOINT !== 'undefined' && SHAMROCK_GAS_ENDPOINT)
+    ? SHAMROCK_GAS_ENDPOINT
+    : 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
 
 /**
  * Master document packet definition.

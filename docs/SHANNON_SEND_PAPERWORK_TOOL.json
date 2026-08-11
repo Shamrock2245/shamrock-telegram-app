@@ -1,0 +1,46 @@
+{
+  "name": "send_paperwork",
+  "description": "Send the full bail bond paperwork packet (SignNow) to the caller for e-signature. Call after collecting caller name, email, defendant name, and county. Optional surety_id routes OSI vs Palmetto templates.",
+  "url": "https://shamrock-telegram.netlify.app/api/send-paperwork",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer <SEND_PAPERWORK_SECRET from Netlify env>"
+  },
+  "parameters": {
+    "type": "object",
+    "required": ["caller_name", "caller_email", "defendant_name"],
+    "properties": {
+      "caller_name": {
+        "type": "string",
+        "description": "Full name of the indemnitor / caller"
+      },
+      "caller_email": {
+        "type": "string",
+        "description": "Email address to receive signing invites"
+      },
+      "caller_phone": {
+        "type": "string",
+        "description": "Caller mobile for SMS signing link (optional but recommended)"
+      },
+      "defendant_name": {
+        "type": "string",
+        "description": "Full name of the defendant in jail"
+      },
+      "county": {
+        "type": "string",
+        "description": "Florida county where the defendant is held"
+      },
+      "surety_id": {
+        "type": "string",
+        "enum": ["osi", "palmetto"],
+        "description": "Optional surety company for template routing. Default osi. Use palmetto only when the bond is written on Palmetto Surety."
+      }
+    }
+  },
+  "notes": [
+    "Netlify proxies to GAS source=send_paperwork with ELEVENLABS_TOOL_SECRET",
+    "GAS handleShannonSendPaperwork resolves Palmetto template IDs via _resolveTemplateId",
+    "After changing this schema in ElevenLabs Conversational AI UI, re-sync agent_2001kjth4na5ftqvdf1pp3gfb1cb"
+  ]
+}

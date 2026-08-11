@@ -71,12 +71,24 @@ export default async (req, context) => {
             caller_phone: body.caller_phone || body.parameters?.caller_phone || '',
             defendant_name: body.defendant_name || body.parameters?.defendant_name || '',
             county: body.county || body.parameters?.county || '',
-            // Surety routing — 'osi' (default) or 'palmetto'
-            // Shannon can collect this during the call; defaults to 'osi' if not provided
-            surety_id: (body.surety_id || body.parameters?.surety_id || 'osi').toLowerCase()
+            // Surety routing — optional 'osi' (default) or 'palmetto'
+            // ElevenLabs tool param: surety_id (string, optional)
+            surety_id: (body.surety_id || body.parameters?.surety_id || body.surety || 'osi').toLowerCase().trim()
         };
 
-        console.log('[send-paperwork] Extracted data:', JSON.stringify(data));
+        // Normalize surety to allowlist only
+        if (data.surety_id === 'palmetto surety' || data.surety_id === 'palmetto insurance') {
+            data.surety_id = 'palmetto';
+        }
+        if (data.surety_id !== 'palmetto' && data.surety_id !== 'osi') {
+            data.surety_id = 'osi';
+        }
+
+        console.log('[send-paperwork] Extracted data:', JSON.stringify({
+            ...data,
+            caller_email: data.caller_email ? '[redacted]' : '',
+            caller_phone: data.caller_phone ? '[redacted]' : '',
+        }));
 
         if (!data.caller_name || !data.caller_email || !data.defendant_name) {
             return new Response(JSON.stringify({
