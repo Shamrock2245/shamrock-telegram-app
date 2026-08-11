@@ -47,10 +47,10 @@ Three Telegram mini-app surfaces that feed data into the GAS/SignNow/Drive pipel
 
 | Item | Notes |
 |------|-------|
-| Netlify deploy | Push `main` to trigger deploy; confirm `SEND_PAPERWORK_SECRET`, `ELEVENLABS_TOOL_SECRET`, Twilio env vars are set |
-| GAS endpoint URL | `GAS_ENDPOINT` in `intake/app.js` and `documents/app.js` must match the deployed GAS web app URL |
+| Netlify deploy | ✅ 2026-08-11 — SEND_PAPERWORK_SECRET, ELEVENLABS_*, TWILIO_*, GAS_WEB_APP_URL set (production All) |
+| GAS endpoint URL | ✅ stable factory `…CvP-Z/exec` in brand.js + documents/app.js + Netlify env |
 | Palmetto SignNow template IDs | ✅ Aligned with leads `SignNowPacketService.TEMPLATE_MAP` (2026-07-10); verify live SignNow if templates move |
-| ElevenLabs tool definition | Add `surety_id` as an optional string parameter to the Shannon "Send Paperwork" tool definition |
+| ElevenLabs tool definition | ✅ schema `docs/SHANNON_SEND_PAPERWORK_TOOL.json` — confirm optional `surety_id` applied in ElevenLabs UI |
 
 ---
 
