@@ -10,7 +10,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec';
+const GAS_ENDPOINT = null;
 const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 
 /** Documents the defendant needs to sign (subset of full packet) */
@@ -215,23 +215,11 @@ function renderDefendantDocs(caseData) {
 
 async function openDefendantSigning(docId) {
     if (!currentCase) return;
-    try {
-        const params = new URLSearchParams({
-            action: 'telegram_get_signing_url',
-            caseNumber: currentCase.caseNumber,
-            documentId: docId,
-            role: 'defendant'
-        });
-        const response = await fetch(`${GAS_ENDPOINT}?${params}`);
-        const data = await response.json();
-        if (data.signingUrl) {
-            window.open(data.signingUrl, '_blank');
-        } else {
-            alert('Signing link not available yet. Your bondsman is preparing your documents.');
-        }
-    } catch (err) {
-        alert('Unable to load signing link. Please call (239) 332-2245.');
-    }
+
+    // Telegram never creates a signing session. Staff must create the verified
+    // DocuSeal packet in Super CRM after Match, BondCase, surety, POA,
+    // recipient, and contact-approval checks are complete.
+    alert('Your documents are pending staff review. A verified DocuSeal link will be sent only after the required case and recipient checks are complete.');
 }
 
 // ═══════════════════════════════════════════════════════════════

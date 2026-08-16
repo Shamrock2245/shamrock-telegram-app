@@ -7,7 +7,7 @@
 
 **Live URL**: [shamrock-telegram.netlify.app](https://shamrock-telegram.netlify.app)  
 **Bot**: [@ShamrockBail_bot](https://t.me/ShamrockBail_bot)  
-**Last Updated**: March 16, 2026
+**Last Updated**: August 16, 2026
 
 ---
 
@@ -24,7 +24,7 @@ Seven production **Telegram Mini Apps** for the Shamrock Bail Bonds bot, plus **
 | 🏠 **Hub** | `/` | ✅ Live | Central navigation — premium dark glassmorphism UI |
 | 📋 **Intake** | `/intake/` | ✅ Live | 5-step bail intake form (defendant + indemnitor info, document uploads, GPS) |
 | 👤 **Defendant** | `/defendant/` | ✅ Live | Defendant self-service portal (appearance calendar, check-in, court dates) |
-| 📄 **Documents** | `/documents/` | ✅ Live | View, sign, and download case documents via SignNow |
+| 📄 **Documents** | `/documents/` | ✅ Live | View case documents and see DocuSeal staff-review status; Telegram never creates signing links |
 | 💳 **Payment** | `/payment/` | ✅ Live | Make payments, check-ins with selfie + GPS logging |
 | 📊 **Status** | `/status/` | ✅ Live | Case status lookup (court dates, payments, charges from real GAS data) |
 | 📝 **Updates** | `/updates/` | ✅ Live | Update contact info, address, request payment extensions, anonymous tips |
@@ -50,7 +50,7 @@ shamrock-telegram-app/
 │   └── brand.js            # Telegram SDK init, theme management, utilities
 ├── intake/                 # 5-step intake form → GAS doPost
 ├── defendant/              # Defendant self-service portal
-├── documents/              # Document viewer + SignNow signing
+├── documents/              # Document viewer + staff-reviewed DocuSeal handoff
 ├── payment/                # Payment & check-in flow
 ├── status/                 # Case dashboard with court dates
 ├── updates/                # Contact info updates + anonymous tips
@@ -104,7 +104,7 @@ All Mini Apps communicate with the Google Apps Script backend via `fetch()` to t
 | `intake-summarizer.mjs` | Summarize intake submissions |
 | `notify-bondsman.mjs` | Priority notifications to bondsmen |
 | `risk-score.mjs` | Real-time risk scoring |
-| `send-paperwork.mjs` | Trigger SignNow packet from Shannon calls |
+| `send-paperwork.mjs` | Retired direct paperwork endpoint; returns a non-sending Super CRM handoff |
 | `sentiment-watchdog.mjs` | Client sentiment analysis → flag stress |
 | `smart-notify.mjs` | Intelligent notification routing |
 | `status-proxy.mjs` | Cached status lookups via GAS |

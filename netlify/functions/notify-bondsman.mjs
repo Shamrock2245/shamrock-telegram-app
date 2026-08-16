@@ -57,7 +57,7 @@ export default async (req, context) => {
             });
         }
 
-        console.log('[notify-bondsman] Received:', JSON.stringify(body));
+        console.log('[notify-bondsman] Received notification request.');
 
         const data = {
             caller_name: body.caller_name || body.parameters?.caller_name || '',

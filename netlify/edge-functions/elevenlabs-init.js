@@ -13,7 +13,7 @@
  * URL: https://shamrock-telegram.netlify.app/api/elevenlabs-init
  */
 
-const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+const GAS_ENDPOINT = Deno.env.get('GAS_WEB_APP_URL') || '';
 const MEM0_API_URL = 'https://api.mem0.ai/v1/memories/';
 const CONTEXT_TIMEOUT_MS = 1800; // 1.8s max per fetch — well within ElevenLabs timeout
 
@@ -38,7 +38,7 @@ export default async (request, context) => {
         if (request.method === 'POST') {
             try {
                 const body = await request.json();
-                console.log('📞 ElevenLabs init (edge):', JSON.stringify(body));
+                console.log('[elevenlabs-init] Received call-context request.');
                 callerPhone = body.caller_id || body.from || body.From || '';
                 callSid = body.call_sid || body.CallSid || '';
             } catch (e) {
@@ -62,7 +62,7 @@ export default async (request, context) => {
                 ? `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
                 : callerPhone;
 
-        console.log(`📞 Caller: ${displayPhone} | SID: ${callSid}`);
+        console.log('[elevenlabs-init] Call context lookup requested.');
 
         // ── Parallel fetch: GAS case context + Mem0 memories ─
         const memoApiKey = Deno.env.get('MEMO_API_KEY') || '';
@@ -71,7 +71,7 @@ export default async (request, context) => {
         let caseContext = null;
         let memories = [];
 
-        if (normalizedPhone.length >= 7) {
+        if (GAS_ENDPOINT && normalizedPhone.length >= 7) {
             // Race both fetches with a timeout
             const withTimeout = (promise, ms) =>
                 Promise.race([

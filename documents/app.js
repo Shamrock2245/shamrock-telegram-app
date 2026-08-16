@@ -13,7 +13,7 @@
 // Stable factory URL — must match shared/brand.js SHAMROCK_GAS_ENDPOINT and Netlify GAS_WEB_APP_URL
 const GAS_ENDPOINT = (typeof SHAMROCK_GAS_ENDPOINT !== 'undefined' && SHAMROCK_GAS_ENDPOINT)
     ? SHAMROCK_GAS_ENDPOINT
-    : 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+    : null;
 
 /**
  * Master document packet definition.
@@ -377,27 +377,10 @@ function updateProgress(signed, total) {
 async function openSigning(docId) {
     if (!currentCase) return;
 
-    try {
-        const params = new URLSearchParams({
-            action: 'telegram_get_signing_url',
-            caseNumber: currentCase.caseNumber || (currentCase.caseData && currentCase.caseData.caseNumber) || '',
-            documentId: docId,
-            // Pass surety_id so GAS resolves the correct OSI or Palmetto template
-            surety_id: currentCase.surety_id || 'osi'
-        });
-
-        const response = await fetch(`${GAS_ENDPOINT}?${params}`);
-        const data = await response.json();
-
-        if (data.signingUrl) {
-            // Open SignNow embedded signing
-            window.open(data.signingUrl, '_blank');
-        } else {
-            alert('Signing link not available yet. Your agent is preparing your documents.');
-        }
-    } catch (err) {
-        alert('Unable to load signing link. Please try again or call (239) 332-2245.');
-    }
+    // Signing links are created only in Super CRM after staff validates the
+    // Match, BondCase, surety, POA, recipient, and contact approval records.
+    // Telegram does not create links or open embedded signing sessions.
+    alert('Your documents are pending staff review. A verified DocuSeal link will be sent only after the required case and recipient checks are complete.');
 }
 
 // ═══════════════════════════════════════════════════════════════

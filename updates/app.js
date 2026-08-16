@@ -16,7 +16,7 @@
 const UPDATE_CONFIG = {
     GAS_ENDPOINT: typeof SHAMROCK_GAS_ENDPOINT !== 'undefined'
         ? SHAMROCK_GAS_ENDPOINT
-        : 'https://script.google.com/macros/s/AKfycby5EM_U4d1GRHf_Or64RPGlOFUuOFld4m5ap9DghRm5njoUCTzSmEVmzmwmak9sR6fSFQ/exec',
+        : null,
     ACTION: 'telegram_client_update'
 };
 
