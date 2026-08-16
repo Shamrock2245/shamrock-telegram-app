@@ -40,6 +40,12 @@ Three Telegram mini-app surfaces that feed intake and document-review data into 
 
 ---
 
+## Live alignment release (2026-08-16)
+
+Commit `098fd1e` is on `main`. Public `POST /api/send-paperwork` returned HTTP `409` with `DIRECT_PAPERWORK_RETIRED`, confirming that the Netlify production endpoint no longer forwards data, creates a packet, sends a signing link, or sends SMS/email. The shared factory, school, leads, DocuSeal, paperwork, and Postiz public surfaces returned `200` during the same verification pass.
+
+> This release does **not** prove a packet template, recipient, payment, or client contact. Direct tool removal in the ElevenLabs UI and the staff-gated Super CRM DocuSeal smoke remain open.
+
 ## Ops still required (not proven by git alone)
 
 | Item | Notes |
