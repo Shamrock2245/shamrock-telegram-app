@@ -13,7 +13,7 @@
 
 ## What This Is
 
-Seven production **Telegram Mini Apps** for the Shamrock Bail Bonds bot, plus **17 Netlify serverless functions** and **3 edge functions** for AI, compliance, and voice integration. These are PWA-optimized web apps that run inside the Telegram chat window — zero app install required.
+Eight production **Telegram Mini Apps** for the Shamrock Bail Bonds bot, plus **18 Netlify serverless functions** and **3 edge functions** for AI, compliance, and voice integration. These are PWA-optimized web apps that run inside the Telegram chat window — zero app install required.
 
 ---
 
@@ -24,6 +24,7 @@ Seven production **Telegram Mini Apps** for the Shamrock Bail Bonds bot, plus **
 | 🏠 **Hub** | `/` | ✅ Live | Central navigation — premium dark glassmorphism UI |
 | 📋 **Intake** | `/intake/` | ✅ Live | 5-step bail intake form (defendant + indemnitor info, document uploads, GPS) |
 | 👤 **Defendant** | `/defendant/` | ✅ Live | Defendant self-service portal (appearance calendar, check-in, court dates) |
+| ✍️ **Paperwork** | `/paperwork/` | ✅ Live | PIN unlock, ID scan, remaining fields, then embed staff-issued DocuSeal for indemnitor, defendant, or co-indemnitor. Never creates a packet. |
 | 📄 **Documents** | `/documents/` | ✅ Live | View case documents and see DocuSeal staff-review status; Telegram never creates signing links |
 | 💳 **Payment** | `/payment/` | ✅ Live | Make payments, check-ins with selfie + GPS logging |
 | 📊 **Status** | `/status/` | ✅ Live | Case status lookup (court dates, payments, charges from real GAS data) |
@@ -34,6 +35,7 @@ Seven production **Telegram Mini Apps** for the Shamrock Bail Bonds bot, plus **
 - Intake: https://shamrock-telegram.netlify.app/intake/
 - Defendant: https://shamrock-telegram.netlify.app/defendant/
 - Documents: https://shamrock-telegram.netlify.app/documents/
+- Paperwork: https://shamrock-telegram.netlify.app/paperwork/
 - Payment: https://shamrock-telegram.netlify.app/payment/
 - Status: https://shamrock-telegram.netlify.app/status/
 - Updates: https://shamrock-telegram.netlify.app/updates/
@@ -51,6 +53,7 @@ shamrock-telegram-app/
 ├── intake/                 # 5-step intake form → GAS doPost
 ├── defendant/              # Defendant self-service portal
 ├── documents/              # Document viewer + staff-reviewed DocuSeal handoff
+├── paperwork/              # PIN / ID / remaining-fields popup → Super CRM → DocuSeal
 ├── payment/                # Payment & check-in flow
 ├── status/                 # Case dashboard with court dates
 ├── updates/                # Contact info updates + anonymous tips
@@ -88,7 +91,7 @@ All Mini Apps communicate with the Google Apps Script backend via `fetch()` to t
 
 ---
 
-## ⚡ Netlify Serverless Functions (17)
+## ⚡ Netlify Serverless Functions (18)
 
 | Function | Purpose |
 |----------|---------|
@@ -103,6 +106,7 @@ All Mini Apps communicate with the Google Apps Script backend via `fetch()` to t
 | `engagement-watchdog.mjs` | Escalate unacknowledged court reminders |
 | `intake-summarizer.mjs` | Summarize intake submissions |
 | `notify-bondsman.mjs` | Priority notifications to bondsmen |
+| `paperwork-proxy.mjs` | PIN / ID / remaining-fields proxy to Super CRM. Does not create packets. |
 | `risk-score.mjs` | Real-time risk scoring |
 | `send-paperwork.mjs` | Retired direct paperwork endpoint; returns a non-sending Super CRM handoff |
 | `sentiment-watchdog.mjs` | Client sentiment analysis → flag stress |
@@ -140,7 +144,7 @@ All Mini Apps share a unified design system via `shared/theme.css` and `shared/b
 - **Hosting**: Netlify — auto-deploys from `main` branch on push
 - **Headers**: Permissive framing (`X-Frame-Options: ALLOWALL`) for Telegram WebViews
 - **Caching**: Static assets cached 1 hour
-- **Routing**: SPA-style redirects for all 7 Mini App paths via `netlify.toml`
+- **Routing**: SPA-style redirects for all 8 Mini App paths via `netlify.toml`
 - **Edge**: 3 edge functions deployed globally (Deno runtime)
 
 ### Environment Variables (Netlify Dashboard)

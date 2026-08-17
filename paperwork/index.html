@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Shamrock Bail Bonds — Paperwork</title>
+    <script>(function () { var t = localStorage.getItem('shamrock-theme'); document.documentElement.setAttribute('data-theme', t || 'dark') })();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://sign.shamrockbailbonds.biz/js/form.js" defer></script>
+</head>
+
+<body class="paperwork-app">
+    <header class="app-header" id="appHeader">
+        <div class="logo">
+            <a href="../" class="back-link" id="backLink"><i class="ph ph-arrow-left"></i> Back</a>
+            <div class="logo-text">
+                <h1><i class="ph ph-pen-nib"></i> Paperwork</h1>
+                <p class="tagline" id="headerTagline">Unlock, confirm, then sign — same steps for every party</p>
+            </div>
+        </div>
+        <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+    </header>
+
+    <div class="step-rail" id="stepRail" aria-hidden="false">
+        <span class="step-pill" data-step="unlock">1. Unlock</span>
+        <span class="step-pill" data-step="identity">2. ID</span>
+        <span class="step-pill" data-step="fields">3. Details</span>
+        <span class="step-pill" data-step="sign">4. Sign</span>
+    </div>
+
+    <main class="container">
+        <section class="screen active" id="screen-unlock">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-shield-check"></i></div>
+                <h2>Unlock your packet</h2>
+                <p id="unlockCopy">We’ll text a 6-digit PIN to the mobile number on your bond file. Works the same whether you are the co-signer, a second co-signer, or the defendant.</p>
+            </div>
+            <div class="shamrock-card form-card">
+                <div class="form-group">
+                    <label for="phoneInput">Mobile phone</label>
+                    <input type="tel" id="phoneInput" inputmode="numeric" autocomplete="tel" placeholder="(239) 555-0100" maxlength="16">
+                </div>
+                <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="sendPinBtn">
+                    Text me a PIN
+                </button>
+                <div class="pin-row hidden" id="pinRow">
+                    <div class="form-group">
+                        <label for="pinInput">6-digit PIN</label>
+                        <input type="text" id="pinInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+                    </div>
+                    <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="verifyPinBtn">
+                        Continue
+                    </button>
+                </div>
+                <p class="status-line" id="unlockStatus"></p>
+            </div>
+        </section>
+
+        <section class="screen" id="screen-identity">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-identification-card"></i></div>
+                <h2>Verify your identity</h2>
+                <p>Take a selfie, then a clear photo of your government ID. We use this to fill your paperwork.</p>
+            </div>
+            <div class="shamrock-card form-card">
+                <div class="capture-grid">
+                    <label class="capture-tile">
+                        <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
+                        <i class="ph ph-camera"></i>
+                        <strong>Selfie</strong>
+                        <span id="selfieLabel">Tap to take a photo</span>
+                    </label>
+                    <label class="capture-tile">
+                        <input type="file" id="idInput" accept="image/*" capture="environment" hidden>
+                        <i class="ph ph-credit-card"></i>
+                        <strong>ID front</strong>
+                        <span id="idLabel">Driver license or state ID</span>
+                    </label>
+                </div>
+                <div id="idPreview" class="id-preview hidden"></div>
+                <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="scanIdBtn" disabled>
+                    Scan ID and continue
+                </button>
+                <p class="status-line" id="identityStatus"></p>
+            </div>
+        </section>
+
+        <section class="screen" id="screen-ready">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-files"></i></div>
+                <h2 id="readyTitle">Packet ready</h2>
+                <p id="readyCopy">Review the details we filled, then sign the official packet.</p>
+            </div>
+            <div class="shamrock-card case-card">
+                <div class="party">
+                    <span class="party-role">Defendant</span>
+                    <span class="party-name" id="readyDefendant">—</span>
+                </div>
+                <div class="party">
+                    <span class="party-role">You are signing as</span>
+                    <span class="party-name" id="readyRole">—</span>
+                </div>
+                <div class="party">
+                    <span class="party-role">Your packet</span>
+                    <span class="party-name" id="readyPacket">—</span>
+                </div>
+            </div>
+            <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="openFieldsBtn">
+                Confirm remaining details
+            </button>
+            <button type="button" class="shamrock-btn btn-ghost btn-full hidden" id="openSignBtn">
+                Sign paperwork now
+            </button>
+            <p class="status-line" id="readyStatus"></p>
+        </section>
+
+        <section class="screen" id="screen-sign">
+            <div class="sign-toolbar">
+                <button type="button" class="text-btn" id="exitSignBtn"><i class="ph ph-arrow-left"></i> Back</button>
+                <span>Sign with finger or Apple Pencil</span>
+            </div>
+            <div id="docuseal-mount"></div>
+        </section>
+
+        <section class="screen" id="screen-blocked">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-hourglass"></i></div>
+                <h2>Staff is still reviewing</h2>
+                <p id="blockedCopy">Your identity is saved. A bondsman must validate the match and bond case before a signing packet can be issued.</p>
+            </div>
+            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call (239) 332-2245</a>
+        </section>
+
+        <section class="screen" id="screen-done">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-check-circle"></i></div>
+                <h2>Paperwork signed</h2>
+                <p>Your packet is on file. A Shamrock agent will follow up with next steps.</p>
+            </div>
+            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call the office</a>
+        </section>
+    </main>
+
+    <div class="popup" id="popup-address" role="dialog" aria-modal="true" hidden>
+        <div class="popup-backdrop" data-close="address"></div>
+        <div class="popup-card">
+            <div class="popup-accent"></div>
+            <h3>Is this address correct?</h3>
+            <p class="popup-sub">We read this from your ID. Confirm it before we fill the packet.</p>
+            <div class="form-group">
+                <label for="addrStreet">Street</label>
+                <input type="text" id="addrStreet" autocomplete="street-address">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="addrCity">City</label>
+                    <input type="text" id="addrCity" autocomplete="address-level2">
+                </div>
+                <div class="form-group">
+                    <label for="addrState">State</label>
+                    <input type="text" id="addrState" maxlength="2" autocomplete="address-level1">
+                </div>
+                <div class="form-group">
+                    <label for="addrZip">ZIP</label>
+                    <input type="text" id="addrZip" inputmode="numeric" maxlength="10" autocomplete="postal-code">
+                </div>
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="shamrock-btn btn-ghost" data-close="address">Not now</button>
+                <button type="button" class="shamrock-btn shamrock-btn-primary" id="confirmAddressBtn">Yes, that’s me</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup" id="popup-fields" role="dialog" aria-modal="true" hidden>
+        <div class="popup-backdrop" data-close="fields"></div>
+        <div class="popup-card popup-card-tall">
+            <div class="popup-accent"></div>
+            <h3 id="fieldsTitle">A few details we still need</h3>
+            <p class="popup-sub" id="fieldsSub">Bond amount, POA, and charges stay with your bondsman. Fill what you know — leave the rest blank.</p>
+            <div class="form-group">
+                <label for="fieldName">Legal name</label>
+                <input type="text" id="fieldName" autocomplete="name">
+            </div>
+            <div id="cosignerFields">
+            <div class="form-group" id="rowRelationship">
+                <label for="fieldRelationship">How do you know the defendant?</label>
+                <input type="text" id="fieldRelationship" placeholder="Mother, spouse, friend…">
+            </div>
+            <div class="form-group" id="rowEmployer">
+                <label for="fieldEmployer">Employer</label>
+                <input type="text" id="fieldEmployer" autocomplete="organization">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fieldEmployerPhone">Work phone</label>
+                    <input type="tel" id="fieldEmployerPhone" autocomplete="tel">
+                </div>
+                <div class="form-group">
+                    <label for="fieldDl">DL / ID #</label>
+                    <input type="text" id="fieldDl">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fieldEmployerAddress">Employer address</label>
+                <input type="text" id="fieldEmployerAddress">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fieldVehicleYear">Vehicle year</label>
+                    <input type="text" id="fieldVehicleYear" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label for="fieldVehicleMake">Make</label>
+                    <input type="text" id="fieldVehicleMake">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fieldVehicleModel">Model</label>
+                    <input type="text" id="fieldVehicleModel">
+                </div>
+                <div class="form-group">
+                    <label for="fieldVehicleColor">Color</label>
+                    <input type="text" id="fieldVehicleColor">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fieldRef1">Reference 1 — name and phone</label>
+                <input type="text" id="fieldRef1" placeholder="Name, (239) 555-0100">
+            </div>
+            </div>
+            <div class="form-group hidden" id="rowDefendantDl">
+                <label for="fieldDefendantDl">DL / ID #</label>
+                <input type="text" id="fieldDefendantDl">
+            </div>
+            <div class="popup-actions">
+                <button type="button" class="shamrock-btn btn-ghost" data-close="fields">Skip for now</button>
+                <button type="button" class="shamrock-btn shamrock-btn-primary" id="saveFieldsBtn">Save and continue</button>
+            </div>
+            <p class="status-line" id="fieldsStatus"></p>
+        </div>
+    </div>
+
+    <footer class="help-bar">
+        <p><i class="ph ph-phone"></i> Questions? <a href="tel:+12393322245">(239) 332-2245</a></p>
+    </footer>
+
+    <script src="../shared/brand.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

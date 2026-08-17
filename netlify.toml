@@ -111,6 +111,11 @@
   to = "/.netlify/functions/status-proxy"
   status = 200
 
+[[redirects]]
+  from = "/api/paperwork"
+  to = "/.netlify/functions/paperwork-proxy"
+  status = 200
+
 # ═══════════════════════════════════════════════════════
 # EDGE FUNCTIONS
 # ═══════════════════════════════════════════════════════
@@ -167,6 +172,11 @@
 [[redirects]]
   from = "/defendant/*"
   to = "/defendant/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/paperwork/*"
+  to = "/paperwork/index.html"
   status = 200
 
 # ═══════════════════════════════════════════════════════

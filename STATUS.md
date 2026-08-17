@@ -15,6 +15,7 @@ Three Telegram mini-app surfaces that feed intake and document-review data into 
 | Mini-App | Path | User | Purpose |
 |----------|------|------|---------|
 | **Intake** | `/intake/` | Indemnitor (self-serve) | 5-step intake form → GAS IntakeQueue → MongoDB |
+| **Paperwork** | `/paperwork/` | Indemnitor, defendant, or co-indemnitor | PIN → ID → remaining fields → embed a staff-issued DocuSeal `/s/{slug}`. Never creates a packet. |
 | **Documents** | `/documents/` | Indemnitor / Defendant | Case lookup and document status; staff-reviewed DocuSeal handoff only |
 | **Send Paperwork** | `/api/send-paperwork` (Netlify fn) | Legacy callers | Retired; returns a non-sending Super CRM handoff |
 
