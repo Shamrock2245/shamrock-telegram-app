@@ -23,21 +23,49 @@
             <a href="../" class="back-link" id="backLink"><i class="ph ph-arrow-left"></i> Back</a>
             <div class="logo-text">
                 <h1><i class="ph ph-pen-nib"></i> Paperwork</h1>
-                <p class="tagline" id="headerTagline">Unlock, confirm, then sign — same steps for every party</p>
+                <p class="tagline" id="headerTagline">Your information first. Staff completes the final bond packet.</p>
             </div>
         </div>
         <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle theme"></button>
     </header>
 
     <div class="step-rail" id="stepRail" aria-hidden="false">
-        <span class="step-pill" data-step="unlock">1. Unlock</span>
-        <span class="step-pill" data-step="identity">2. ID</span>
-        <span class="step-pill" data-step="fields">3. Details</span>
-        <span class="step-pill" data-step="sign">4. Sign</span>
+        <span class="step-pill" data-step="role">1. Role</span>
+        <span class="step-pill" data-step="unlock">2. Unlock</span>
+        <span class="step-pill" data-step="identity">3. ID</span>
+        <span class="step-pill" data-step="fields">4. Details</span>
+        <span class="step-pill" data-step="sign">5. Sign</span>
     </div>
 
     <main class="container">
-        <section class="screen active" id="screen-unlock">
+        <section class="screen active" id="screen-role">
+            <div class="hero">
+                <div class="hero-icon"><i class="ph ph-user-circle"></i></div>
+                <h2>Who are you completing information for?</h2>
+                <p>Choose the role that describes you. You will review your own ID information before anything is saved.</p>
+            </div>
+            <div class="shamrock-card form-card">
+                <div class="role-choice-grid" role="group" aria-label="Your role">
+                    <button type="button" class="role-choice" id="roleDefendantBtn">
+                        <i class="ph ph-user"></i>
+                        <strong>I am the defendant</strong>
+                        <span>I am completing my own information.</span>
+                    </button>
+                    <button type="button" class="role-choice" id="roleIndemnitorBtn">
+                        <i class="ph ph-handshake"></i>
+                        <strong>I am an indemnitor</strong>
+                        <span>I am a co-signer or person helping with the bond.</span>
+                    </button>
+                </div>
+                <div class="staff-disclaimer" role="note">
+                    <i class="ph ph-info"></i>
+                    <p><strong>This is your secure intake, not the final bond contract.</strong> A Shamrock bondsman will verify the case, connect the right parties, and complete staff-only items such as the bond amount, charges, court details, surety information, and power number. The final paperwork may look different from this intake.</p>
+                </div>
+                <p class="status-line" id="roleStatus"></p>
+            </div>
+        </section>
+
+        <section class="screen" id="screen-unlock">
             <div class="hero">
                 <div class="hero-icon"><i class="ph ph-shield-check"></i></div>
                 <h2>Unlock your packet</h2>
@@ -67,27 +95,27 @@
         <section class="screen" id="screen-identity">
             <div class="hero">
                 <div class="hero-icon"><i class="ph ph-identification-card"></i></div>
-                <h2>Verify your identity</h2>
-                <p>Take a selfie, then a clear photo of your government ID. We use this to fill your paperwork.</p>
+                <h2 id="identityTitle">Start with your ID</h2>
+                <p id="identityCopy">Take a clear photo of your government ID. We will read it, then let you review the information in your own role-specific fields.</p>
             </div>
             <div class="shamrock-card form-card">
                 <div class="capture-grid">
-                    <label class="capture-tile">
-                        <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
-                        <i class="ph ph-camera"></i>
-                        <strong>Selfie</strong>
-                        <span id="selfieLabel">Tap to take a photo</span>
-                    </label>
-                    <label class="capture-tile">
+                    <label class="capture-tile capture-tile-primary">
                         <input type="file" id="idInput" accept="image/*" capture="environment" hidden>
                         <i class="ph ph-credit-card"></i>
                         <strong>ID front</strong>
                         <span id="idLabel">Driver license or state ID</span>
                     </label>
+                    <label class="capture-tile">
+                        <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
+                        <i class="ph ph-camera"></i>
+                        <strong>Selfie (optional)</strong>
+                        <span id="selfieLabel">Add if staff requests it</span>
+                    </label>
                 </div>
                 <div id="idPreview" class="id-preview hidden"></div>
                 <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="scanIdBtn" disabled>
-                    Scan ID and continue
+                    Scan ID and review my information
                 </button>
                 <p class="status-line" id="identityStatus"></p>
             </div>
@@ -97,11 +125,11 @@
             <div class="hero">
                 <div class="hero-icon"><i class="ph ph-files"></i></div>
                 <h2 id="readyTitle">Packet ready</h2>
-                <p id="readyCopy">Review the details we filled, then sign the official packet.</p>
+                <p id="readyCopy">Your identity information is ready for review. Shamrock staff will match it to the right case and prepare any final DocuSeal paperwork.</p>
             </div>
             <div class="shamrock-card case-card">
                 <div class="party">
-                    <span class="party-role">Defendant</span>
+                    <span class="party-role">Person needing bail</span>
                     <span class="party-name" id="readyDefendant">—</span>
                 </div>
                 <div class="party">
@@ -109,8 +137,8 @@
                     <span class="party-name" id="readyRole">—</span>
                 </div>
                 <div class="party">
-                    <span class="party-role">Your packet</span>
-                    <span class="party-name" id="readyPacket">—</span>
+                    <span class="party-role">Final paperwork</span>
+                    <span class="party-name" id="readyPacket">Staff review pending</span>
                 </div>
             </div>
             <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="openFieldsBtn">
@@ -133,10 +161,10 @@
         <section class="screen" id="screen-blocked">
             <div class="hero">
                 <div class="hero-icon"><i class="ph ph-hourglass"></i></div>
-                <h2>Staff is still reviewing</h2>
-                <p id="blockedCopy">Your identity is saved. A bondsman must validate the match and bond case before a signing packet can be issued.</p>
+                <h2>We have your information</h2>
+                <p id="blockedCopy">Your secure intake is with Shamrock. A bondsman will match the right people and case, complete staff-only bond details, and send final DocuSeal paperwork if it is needed.</p>
             </div>
-            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call (239) 332-2245</a>
+            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call&nbsp;(239)&nbsp;332&#8209;2245</a>
         </section>
 
         <section class="screen" id="screen-done">
@@ -145,7 +173,7 @@
                 <h2>Paperwork signed</h2>
                 <p>Your packet is on file. A Shamrock agent will follow up with next steps.</p>
             </div>
-            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call the office</a>
+            <a class="shamrock-btn shamrock-btn-primary btn-full" href="tel:+12393322245">Call&nbsp;the&nbsp;office</a>
         </section>
     </main>
 
@@ -154,10 +182,10 @@
         <div class="popup-card">
             <div class="popup-accent"></div>
             <h3>Is this address correct?</h3>
-            <p class="popup-sub">We read this from your ID. Confirm it before we fill the packet.</p>
+            <p class="popup-sub">We read this from your ID. Confirm it so we can place it in your own information record.</p>
             <div class="form-group">
                 <label for="addrStreet">Street</label>
-                <input type="text" id="addrStreet" autocomplete="street-address">
+                <input type="text" id="addrStreet" autocomplete="address-line1">
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -185,7 +213,11 @@
         <div class="popup-card popup-card-tall">
             <div class="popup-accent"></div>
             <h3 id="fieldsTitle">A few details we still need</h3>
-            <p class="popup-sub" id="fieldsSub">Bond amount, POA, and charges stay with your bondsman. Fill what you know — leave the rest blank.</p>
+            <p class="popup-sub" id="fieldsSub">Bond amount, POA, charges, court information, and final case matching stay with your bondsman. Fill only what you know.</p>
+            <div class="staff-disclaimer staff-disclaimer-compact" role="note">
+                <i class="ph ph-info"></i>
+                <p>Your completed intake helps us move quickly, but it is not the finished bond paperwork. Staff will verify and complete the final document package, which may look different.</p>
+            </div>
             <div class="form-group">
                 <label for="fieldName">Legal name</label>
                 <input type="text" id="fieldName" autocomplete="name">
@@ -235,15 +267,19 @@
             </div>
             <div class="form-group">
                 <label for="fieldRef1">Reference 1 — name and phone</label>
-                <input type="text" id="fieldRef1" placeholder="Name, (239) 555-0100">
+                <input type="text" id="fieldRef1" placeholder="Name, (239)&nbsp;555&#8209;0100">
             </div>
             </div>
             <div class="form-group hidden" id="rowDefendantDl">
                 <label for="fieldDefendantDl">DL / ID #</label>
                 <input type="text" id="fieldDefendantDl">
             </div>
+            <label class="disclaimer-check">
+                <input type="checkbox" id="staffReviewAcknowledgment">
+                <span>I understand Shamrock staff will verify the case and complete the final paperwork.</span>
+            </label>
             <div class="popup-actions">
-                <button type="button" class="shamrock-btn btn-ghost" data-close="fields">Skip for now</button>
+                <button type="button" class="shamrock-btn btn-ghost" data-close="fields">Save later</button>
                 <button type="button" class="shamrock-btn shamrock-btn-primary" id="saveFieldsBtn">Save and continue</button>
             </div>
             <p class="status-line" id="fieldsStatus"></p>
@@ -251,7 +287,7 @@
     </div>
 
     <footer class="help-bar">
-        <p><i class="ph ph-phone"></i> Questions? <a href="tel:+12393322245">(239) 332-2245</a></p>
+        <p><i class="ph ph-phone"></i> Questions? <a href="tel:+12393322245">(239)&nbsp;332&#8209;2245</a></p>
     </footer>
 
     <script src="../shared/brand.js"></script>

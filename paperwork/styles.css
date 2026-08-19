@@ -181,3 +181,88 @@ body.embed .help-bar { display: none; }
     .popup { align-items: center; }
     .popup-card { border-radius: 18px; margin: 16px; }
 }
+
+.role-choice-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.role-choice {
+    width: 100%;
+    min-height: 104px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    column-gap: 12px;
+    align-content: center;
+    text-align: left;
+    color: var(--text-primary);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    cursor: pointer;
+}
+
+.role-choice:hover,
+.role-choice:focus-visible {
+    border-color: var(--shamrock-emerald);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
+    outline: none;
+}
+
+.role-choice i {
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-size: 1.55rem;
+    color: var(--shamrock-emerald);
+}
+
+.role-choice strong { font-size: 1rem; }
+.role-choice span { margin-top: 4px; color: var(--text-secondary); font-size: 0.82rem; line-height: 1.35; }
+
+.staff-disclaimer {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+    padding: 13px;
+    background: rgba(16, 185, 129, 0.09);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.staff-disclaimer i { color: var(--shamrock-emerald); font-size: 1.1rem; margin-top: 2px; }
+.staff-disclaimer p { margin: 0; }
+.staff-disclaimer strong { color: var(--text-primary); }
+.staff-disclaimer-compact { margin: 0 0 16px; }
+
+.disclaimer-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.disclaimer-check input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--shamrock-emerald);
+}
+
+.capture-tile-primary { border-color: rgba(16, 185, 129, 0.62); }
+
+@media (min-width: 440px) {
+    .role-choice-grid { grid-template-columns: 1fr 1fr; }
+    .role-choice { min-height: 132px; grid-template-columns: 1fr; row-gap: 7px; text-align: center; }
+    .role-choice i { grid-row: auto; }
+}

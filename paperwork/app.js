@@ -53,6 +53,8 @@ function bindUi() {
     phoneInput.addEventListener('input', () => {
         phoneInput.value = formatPhone(phoneInput.value);
     });
+    document.getElementById('roleDefendantBtn').addEventListener('click', () => chooseRole('defendant'));
+    document.getElementById('roleIndemnitorBtn').addEventListener('click', () => chooseRole('indemnitor'));
     document.getElementById('sendPinBtn').addEventListener('click', sendPin);
     document.getElementById('verifyPinBtn').addEventListener('click', verifyPin);
     document.getElementById('scanIdBtn').addEventListener('click', scanId);
@@ -63,6 +65,7 @@ function bindUi() {
     document.getElementById('exitSignBtn').addEventListener('click', () => showScreen('ready'));
     document.getElementById('selfieInput').addEventListener('change', onSelfie);
     document.getElementById('idInput').addEventListener('change', onIdFile);
+    document.getElementById('staffReviewAcknowledgment').addEventListener('change', () => setStatus('fieldsStatus', '', ''));
     document.getElementById('pinInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') verifyPin();
     });
@@ -82,18 +85,22 @@ function applyQuery() {
         state.phone = phone.slice(-10);
         document.getElementById('phoneInput').value = formatPhone(state.phone);
     }
+    const role = normalizeRole(q.get('role') || '');
+    if (role) applyRole(role);
     const token = q.get('st') || q.get('token') || q.get('session') || '';
     if (token) {
         state.sessionToken = token;
         restoreSession();
         return;
     }
-    const role = (q.get('role') || '').trim().toLowerCase();
-    if (role) applyRole(role);
     const link = q.get('link') || q.get('s') || '';
     if (link) {
         state.packet = { signing_link: normalizeSignUrl(link), has_packet: true };
-        showScreen('identity');
+    }
+    if (state.role) {
+        showScreen('unlock');
+    } else {
+        showScreen('role');
     }
 }
 
@@ -103,6 +110,17 @@ function normalizeRole(role) {
     if (raw === 'co-indemnitor' || raw === 'co_indemnitor' || raw === 'co') return 'coindemnitor';
     if (raw === 'ind' || raw === 'cosigner' || raw === 'co-signer') return 'indemnitor';
     return raw;
+}
+
+function chooseRole(role) {
+    const normalized = normalizeRole(role);
+    if (!['defendant', 'indemnitor', 'coindemnitor'].includes(normalized)) {
+        setStatus('roleStatus', 'Choose the role that describes you.', 'error');
+        return;
+    }
+    applyRole(normalized);
+    setStatus('roleStatus', '', '');
+    showScreen('unlock');
 }
 
 function applyRole(role) {
@@ -148,7 +166,7 @@ function showScreen(name) {
     const el = document.getElementById('screen-' + name);
     if (el) el.classList.add('active');
     document.body.classList.toggle('signing-mode', name === 'sign');
-    const map = { unlock: 'unlock', identity: 'identity', ready: 'fields', sign: 'sign', blocked: 'fields', done: 'sign' };
+    const map = { role: 'role', unlock: 'unlock', identity: 'identity', ready: 'fields', sign: 'sign', blocked: 'fields', done: 'sign' };
     document.querySelectorAll('.step-pill').forEach((pill) => {
         pill.classList.toggle('active', pill.getAttribute('data-step') === map[name]);
     });
@@ -176,7 +194,12 @@ async function sendPin() {
     }
     state.phone = phone;
     setStatus('unlockStatus', 'Sending PIN…');
-    const data = await api('send-pin', { phone });
+    if (!state.role) {
+        showScreen('role');
+        setStatus('roleStatus', 'Choose whether you are the defendant or an indemnitor first.', 'error');
+        return;
+    }
+    const data = await api('send-pin', { phone, role: state.role });
     if (!data.success) {
         setStatus('unlockStatus', data.error || 'Could not send PIN.', 'error');
         return;
@@ -199,6 +222,10 @@ async function verifyPin() {
         return;
     }
     applySession(data);
+    if (!state.role) {
+        showScreen('role');
+        return;
+    }
     showScreen('identity');
 }
 
@@ -210,9 +237,11 @@ async function restoreSession() {
         return;
     }
     applySession(data);
-    if (data.extracted && data.extracted.full_name) {
+    if (!state.role) {
+        showScreen('role');
+    } else if (data.extracted && data.extracted.full_name) {
         fillFromExtracted(data.extracted);
-        showScreen(data.has_packet ? 'ready' : 'blocked');
+        showScreen('ready');
     } else {
         showScreen('identity');
     }
@@ -226,13 +255,13 @@ function applySession(data) {
     if (state.phone) document.getElementById('phoneInput').value = formatPhone(state.phone);
     document.getElementById('readyDefendant').textContent = data.defendant_name || 'On file';
     document.getElementById('readyPacket').textContent = data.packet_id || (data.has_packet ? 'Ready' : 'Not issued yet');
-    if (data.role) applyRole(data.role);
+    if (data.role && !state.role) applyRole(data.role);
     if (data.has_packet && data.signing_link) {
         document.getElementById('openSignBtn').classList.remove('hidden');
-        setStatus('readyStatus', 'Staff already issued your DocuSeal packet.', 'ok');
+        setStatus('readyStatus', 'Staff has already issued final DocuSeal paperwork. Review your information first, then you may sign.', 'ok');
     } else {
         document.getElementById('blockedCopy').textContent = data.message
-            || 'Your identity is saved. A bondsman must validate the match and bond case before a signing packet can be issued.';
+            || 'Your intake is saved. A Shamrock bondsman will connect the right people and complete the final bond details before issuing paperwork, if needed.';
     }
 }
 
@@ -254,7 +283,7 @@ function onIdFile(e) {
 }
 
 function maybeEnableScan() {
-    document.getElementById('scanIdBtn').disabled = !(state.selfieReady && state.idFile);
+    document.getElementById('scanIdBtn').disabled = !state.idFile;
 }
 
 async function scanId() {
@@ -273,7 +302,7 @@ async function scanId() {
     const preview = document.getElementById('idPreview');
     preview.classList.remove('hidden');
     preview.textContent = [data.extracted.full_name, data.extracted.dob, data.extracted.dl_number].filter(Boolean).join(' · ');
-    setStatus('identityStatus', 'ID read. Confirm your address.', 'ok');
+    setStatus('identityStatus', 'ID read. Review the address and your role-specific details.', 'ok');
     openPopup('address');
 }
 
@@ -283,18 +312,17 @@ function fillFromExtracted(ext) {
     document.getElementById('addrState').value = ext.state || '';
     document.getElementById('addrZip').value = ext.zip || '';
     document.getElementById('fieldName').value = ext.full_name || document.getElementById('fieldName').value;
-    document.getElementById('fieldDl').value = ext.dl_number || document.getElementById('fieldDl').value;
     const defDl = document.getElementById('fieldDefendantDl');
-    if (defDl) defDl.value = ext.dl_number || defDl.value;
+    if (state.role === 'defendant') {
+        if (defDl) defDl.value = ext.dl_number || defDl.value;
+    } else {
+        document.getElementById('fieldDl').value = ext.dl_number || document.getElementById('fieldDl').value;
+    }
 }
 
 function confirmAddress() {
     closePopup('address');
     showScreen('ready');
-    if (state.role === 'defendant' && state.packet && state.packet.signing_link) {
-        openSigning();
-        return;
-    }
     openPopup('fields');
 }
 
@@ -349,10 +377,20 @@ function splitRef(raw) {
 }
 
 async function saveFields() {
-    setStatus('fieldsStatus', 'Saving…');
+    if (!state.role) {
+        showScreen('role');
+        return;
+    }
+    if (!document.getElementById('staffReviewAcknowledgment').checked) {
+        setStatus('fieldsStatus', 'Please acknowledge that Shamrock staff will verify the case and complete the final paperwork.', 'error');
+        return;
+    }
+    setStatus('fieldsStatus', 'Saving your secure intake…');
     const data = await api('fields', {
         session_token: state.sessionToken,
+        role: state.role,
         address_confirmed: true,
+        staff_review_acknowledged: true,
         fields: collectFields(),
     });
     if (!data.success) {
@@ -363,10 +401,12 @@ async function saveFields() {
     closePopup('fields');
     if (data.has_packet && data.signing_link) {
         document.getElementById('openSignBtn').classList.remove('hidden');
-        setStatus('readyStatus', 'Details saved to your packet. You can sign now.', 'ok');
+        setStatus('readyStatus', 'Your information is saved to the final packet. You can sign now.', 'ok');
         openSigning();
         return;
     }
+    document.getElementById('blockedCopy').textContent = data.message
+        || 'Your information is securely with Shamrock. We will match the right people and case, then send final DocuSeal paperwork if it is needed.';
     showScreen('blocked');
 }
 
