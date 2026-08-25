@@ -1,18 +1,18 @@
 /**
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
- * Incoming Twilio voice calls are routed by caller ID + Shannon switch:
- *   • Whitelisted numbers (jails, sheriff) → ring office phones
- *   • SHANNON_LIVE=true (default) → Shannon paperwork assistant
- *   • SHANNON_LIVE=false → ring office phones (Shannon only if nobody answers)
+ * Twilio number +1 727-295-2245 forwards to office line +1 239-955-0301.
  *
- * Production notes (ElevenLabs register-call + Twilio 2026 docs):
- *   • Pass Twilio From/To, direction=inbound, and caller_phone dynamic vars
- *   • Agent audio must be μ-law 8000 Hz
- *   • Live SIP transfer is not available on register-call; Shannon texts via BlueBubbles
- *   • Validate X-Twilio-Signature before returning TwiML
+ *   • Public callers → ring 239-955-0301. Shannon picks up if nobody answers.
+ *   • Jail/sheriff whitelist → same office line.
+ *   • SHANNON_LIVE=true → Shannon answers first (Brendan's AI switch).
+ *   • force_ai=true → Shannon (unanswered overflow).
  *
- * Brendan flips SHANNON_LIVE in Netlify env. No code change required.
+ * Never dial 727-295-2245 or 239-332-2245 from this webhook (loop).
+ * Never dial 239-955-0301 if that line is the caller.
+ *
+ * Shannon texts go through BlueBubbles. Register-call cannot SIP-transfer;
+ * the human destination for a future native import is 239-955-0301.
  *
  * URL: https://shamrock-telegram.netlify.app/api/twilio-voice
  */
@@ -38,10 +38,9 @@ const PREFIX_WHITELIST = [
     '1239477',
 ];
 
-const OFFICE_PHONES = [
-    { number: '+12399550178', timeout: 20 },
-    { number: '+12399550301', timeout: 25 },
-];
+const TWILIO_NUMBER = '+17272952245';
+const OFFICE_LINE = '+12399550301';
+const OFFICE_RING_SECONDS = 25;
 
 const XML_HEADERS = {
     'Content-Type': 'application/xml',
@@ -58,11 +57,27 @@ function isWhitelisted(digits) {
     return false;
 }
 
+function digitsOnly(value) {
+    return String(value || '').replace(/\D/g, '');
+}
+
+function isOfficeLine(digits) {
+    const d = digitsOnly(digits);
+    return d === '12399550301' || d.endsWith('2399550301');
+}
+
+function dialCallerId(callerDigits) {
+    const d = digitsOnly(callerDigits);
+    if (d.length === 11 && d.startsWith('1')) return `+${d}`;
+    if (d.length === 10) return `+1${d}`;
+    return TWILIO_NUMBER;
+}
+
 function buildDialTwiML(callerDigits) {
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-    for (const phone of OFFICE_PHONES) {
-        twiml += `<Dial timeout="${phone.timeout}" callerId="+${callerDigits}">`;
-        twiml += `<Number>${phone.number}</Number>`;
+    if (!isOfficeLine(callerDigits)) {
+        twiml += `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${dialCallerId(callerDigits)}" answerOnBridge="true">`;
+        twiml += `<Number>${OFFICE_LINE}</Number>`;
         twiml += '</Dial>';
     }
     twiml += '<Say>Please hold while we connect you to our answering service.</Say>';
@@ -162,17 +177,18 @@ export default async (request, context) => {
         return new Response(rejectTwiML(), { status: 403, headers: XML_HEADERS });
     }
 
-    const digits = from.replace(/\D/g, '');
+    const digits = digitsOnly(from);
     console.log(`📞 Voice inbound | From: ${from} | To: ${to} | SID: ${callSid} | ForceAI: ${forceAI}`);
 
+    const shannonFront = (Deno.env.get('SHANNON_LIVE') || 'false').toLowerCase() === 'true';
+
     if (!forceAI && isWhitelisted(digits)) {
-        console.log('✅ WHITELISTED — routing to office phones');
+        console.log(`✅ WHITELISTED — routing to ${OFFICE_LINE}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
-    const shannonLive = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
-    if (!forceAI && !shannonLive) {
-        console.log('🔌 SHANNON_LIVE=false — routing public caller to office phones');
+    if (!forceAI && !shannonFront) {
+        console.log(`☎️ FORWARD — ${TWILIO_NUMBER} → ${OFFICE_LINE}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
