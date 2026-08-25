@@ -6,68 +6,50 @@
  *   • SHANNON_LIVE=true (default) → Shannon paperwork assistant
  *   • SHANNON_LIVE=false → ring office phones (Shannon only if nobody answers)
  *
- * Brendan flips SHANNON_LIVE in Netlify env. No code change required.
+ * Production notes (ElevenLabs register-call + Twilio 2026 docs):
+ *   • Pass Twilio From/To, direction=inbound, and caller_phone dynamic vars
+ *   • Agent audio must be μ-law 8000 Hz
+ *   • Live SIP transfer is not available on register-call; Shannon texts via BlueBubbles
+ *   • Validate X-Twilio-Signature before returning TwiML
  *
- * Edge function = near-zero cold start. Critical for voice.
+ * Brendan flips SHANNON_LIVE in Netlify env. No code change required.
  *
  * URL: https://shamrock-telegram.netlify.app/api/twilio-voice
  */
 
-// ═══════════════════════════════════════════════════════════════
-// WHITELIST — Edit this section to add/remove numbers
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Exact phone numbers that ring through to office.
- * Format: E.164 without the '+' (e.g., '12394771500')
- */
 const EXACT_WHITELIST = new Set([
-    // Lee County Jail / Sheriff
-    '12394771500',   // Main jail line
-    '12394771700',   // Sheriff admin
-    // Known direct lines
-    '12393368019',   // Known jail-related
-    // Jail collect call numbers (GTL / facility-specific)
-    '12393373135',   // Jail collect
-    '12393396443',   // Jail collect
-    '12393547068',   // Jail collect
-    '19416212140',   // Jail collect (Charlotte County area)
-    '19415319469',   // Jail collect (Sarasota/Charlotte area)
-    '19412100540',   // Jail collect (Sarasota/Charlotte area)
-    // GTL / ConnectNetwork / ViaPath (Lee County inmate call provider)
-    '18667329098',   // GTL customer service
-    '18776504249',   // GTL billing
-    '18004838314',   // GTL AdvancePay
-    // Securus Technologies
-    '18008446591',   // Securus customer service
-    // ICSolutions
-    '18885068407',   // ICSolutions customer service
+    '12394771500',
+    '12394771700',
+    '12393368019',
+    '12393373135',
+    '12393396443',
+    '12393547068',
+    '19416212140',
+    '19415319469',
+    '19412100540',
+    '18667329098',
+    '18776504249',
+    '18004838314',
+    '18008446591',
+    '18885068407',
 ]);
 
-/**
- * Prefix patterns — any number starting with these digits matches.
- * Format: digits after country code '1' (e.g., '239477' matches all 239-477-****)
- */
 const PREFIX_WHITELIST = [
-    '1239477',       // All Lee County Sheriff's Office numbers (239-477-****)
+    '1239477',
 ];
-
-// ═══════════════════════════════════════════════════════════════
-// OFFICE ROUTING — Sequential ring
-// ═══════════════════════════════════════════════════════════════
 
 const OFFICE_PHONES = [
-    { number: '+12399550178', timeout: 20 },  // Primary office
-    { number: '+12399550301', timeout: 25 },  // Spanish / fallback
+    { number: '+12399550178', timeout: 20 },
+    { number: '+12399550301', timeout: 25 },
 ];
 
-const SPANISH_DIRECT = '+12399550301';
+const XML_HEADERS = {
+    'Content-Type': 'application/xml',
+    'Cache-Control': 'no-cache',
+};
 
-// ═══════════════════════════════════════════════════════════════
+const CANONICAL_VOICE_URL = 'https://shamrock-telegram.netlify.app/api/twilio-voice';
 
-/**
- * Check if a phone number (digits only) matches the whitelist.
- */
 function isWhitelisted(digits) {
     if (EXACT_WHITELIST.has(digits)) return true;
     for (const prefix of PREFIX_WHITELIST) {
@@ -76,38 +58,77 @@ function isWhitelisted(digits) {
     return false;
 }
 
-/**
- * Build TwiML to ring office phones sequentially.
- */
 function buildDialTwiML(callerDigits) {
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
-
     for (const phone of OFFICE_PHONES) {
         twiml += `<Dial timeout="${phone.timeout}" callerId="+${callerDigits}">`;
         twiml += `<Number>${phone.number}</Number>`;
         twiml += '</Dial>';
     }
-
-    // If nobody picks up, send to Shannon as fallback
-    twiml += '<Say voice="alice">Please hold while we connect you to our answering service.</Say>';
+    twiml += '<Say>Please hold while we connect you to our answering service.</Say>';
     twiml += '<Pause length="1"/>';
-    // Redirect to self with a flag to force AI routing
     twiml += '<Redirect method="POST">/api/twilio-voice?force_ai=true</Redirect>';
     twiml += '</Response>';
-
     return twiml;
 }
 
-export default async (request, context) => {
-    const XML_HEADERS = {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'no-cache',
-    };
+function rejectTwiML() {
+    return '<?xml version="1.0" encoding="UTF-8"?><Response><Reject/></Response>';
+}
 
-    // ── Parse Twilio form-encoded POST ──────────────────────
+function timingSafeEqual(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+    let out = 0;
+    for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return out === 0;
+}
+
+async function hmacSha1Base64(secret, message) {
+    const key = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(secret),
+        { name: 'HMAC', hash: 'SHA-1' },
+        false,
+        ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+    const bytes = new Uint8Array(sig);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+}
+
+function webhookUrlsToCheck(request) {
+    const incoming = new URL(request.url);
+    const search = incoming.search || '';
+    const configured = (Deno.env.get('TWILIO_VOICE_WEBHOOK_URL') || CANONICAL_VOICE_URL).replace(/\/$/, '');
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || incoming.host;
+    const proto = request.headers.get('x-forwarded-proto') || 'https';
+    return [
+        configured + search,
+        `${proto}://${host}${incoming.pathname}${search}`,
+        CANONICAL_VOICE_URL + search,
+    ].filter((url, idx, arr) => arr.indexOf(url) === idx);
+}
+
+async function twilioSignatureValid(request, params) {
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN') || '';
+    const signature = request.headers.get('X-Twilio-Signature') || '';
+    if (!authToken || !signature) return false;
+    const sorted = Object.keys(params).sort().map((key) => key + params[key]).join('');
+    for (const url of webhookUrlsToCheck(request)) {
+        const expected = await hmacSha1Base64(authToken, url + sorted);
+        if (timingSafeEqual(expected, signature)) return true;
+    }
+    return false;
+}
+
+export default async (request, context) => {
     let from = '';
+    let to = '';
     let callSid = '';
     let forceAI = false;
+    const params = {};
 
     try {
         const url = new URL(request.url);
@@ -115,30 +136,38 @@ export default async (request, context) => {
 
         if (request.method === 'POST') {
             const body = await request.text();
-            const params = new URLSearchParams(body);
-            from = params.get('From') || params.get('Caller') || '';
-            callSid = params.get('CallSid') || '';
+            const form = new URLSearchParams(body);
+            for (const [key, value] of form.entries()) params[key] = value;
+            from = form.get('From') || form.get('Caller') || '';
+            to = form.get('To') || form.get('Called') || '';
+            callSid = form.get('CallSid') || '';
         }
 
-        // Fallback to query params
         if (!from) from = new URL(request.url).searchParams.get('From') || '';
+        if (!to) to = new URL(request.url).searchParams.get('To') || '';
         if (!callSid) callSid = new URL(request.url).searchParams.get('CallSid') || '';
     } catch (e) {
         console.error('Parse error:', e.message);
     }
 
-    // Clean to digits only
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN') || '';
+    if (authToken) {
+        const ok = await twilioSignatureValid(request, params);
+        if (!ok) {
+            console.error('❌ Invalid or missing X-Twilio-Signature');
+            return new Response(rejectTwiML(), { status: 403, headers: XML_HEADERS });
+        }
+    } else {
+        console.error('❌ TWILIO_AUTH_TOKEN missing — rejecting voice webhook');
+        return new Response(rejectTwiML(), { status: 403, headers: XML_HEADERS });
+    }
+
     const digits = from.replace(/\D/g, '');
-
-    console.log(`📞 Voice inbound | From: ${from} | Digits: ${digits} | SID: ${callSid} | ForceAI: ${forceAI}`);
-
-    // ── Route Decision ──────────────────────────────────────
+    console.log(`📞 Voice inbound | From: ${from} | To: ${to} | SID: ${callSid} | ForceAI: ${forceAI}`);
 
     if (!forceAI && isWhitelisted(digits)) {
-        // ✅ JAIL/SHERIFF — Ring office phones
-        console.log(`✅ WHITELISTED — routing to office phones`);
-        const twiml = buildDialTwiML(digits);
-        return new Response(twiml, { status: 200, headers: XML_HEADERS });
+        console.log('✅ WHITELISTED — routing to office phones');
+        return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
     const shannonLive = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
@@ -147,7 +176,6 @@ export default async (request, context) => {
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
-    // Public callers (or office overflow) — Shannon paperwork assistant
     console.log('🤖 AI ROUTE — Shannon paperwork assistant');
 
     try {
@@ -163,11 +191,9 @@ export default async (request, context) => {
 
         if (!apiKey) {
             console.error('❌ ELEVENLABS_API_KEY not set!');
-            // Fallback: ring office if API key missing
             return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
         }
 
-        // Call ElevenLabs Register Call API
         const registerRes = await fetch(
             'https://api.elevenlabs.io/v1/convai/twilio/register-call',
             {
@@ -179,27 +205,36 @@ export default async (request, context) => {
                 body: JSON.stringify({
                     agent_id: agentId,
                     from_number: from,
-                    to_number: '+17272952245',
+                    to_number: to || '+17272952245',
+                    direction: 'inbound',
+                    conversation_initiation_client_data: {
+                        dynamic_variables: {
+                            caller_phone: from,
+                            caller_id: from,
+                            call_sid: callSid,
+                        },
+                        source_info: { source: 'twilio' },
+                    },
                 }),
-                signal: AbortSignal.timeout(5000),  // 5s max — caller is waiting
+                signal: AbortSignal.timeout(12000),
             }
         );
 
         if (!registerRes.ok) {
             const errText = await registerRes.text();
             console.error(`❌ ElevenLabs Register Call failed: ${registerRes.status} — ${errText}`);
-            // Fallback: ring office
             return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
         }
 
-        // ElevenLabs returns TwiML directly
         const twiml = await registerRes.text();
+        if (!twiml || twiml.indexOf('<Response') === -1) {
+            console.error('❌ ElevenLabs returned non-TwiML payload');
+            return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
+        }
         console.log(`✅ ElevenLabs TwiML received (${twiml.length} chars)`);
         return new Response(twiml, { status: 200, headers: XML_HEADERS });
-
     } catch (err) {
         console.error(`❌ ElevenLabs error: ${err.message}`);
-        // Ultimate fallback: ring office — never drop a call
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 };
