@@ -1,9 +1,12 @@
 /**
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
- * Incoming Twilio voice calls are routed by caller ID:
+ * Incoming Twilio voice calls are routed by caller ID + Shannon switch:
  *   • Whitelisted numbers (jails, sheriff) → ring office phones
- *   • Everyone else → ElevenLabs AI agent (Shannon)
+ *   • SHANNON_LIVE=true (default) → Shannon paperwork assistant
+ *   • SHANNON_LIVE=false → ring office phones (Shannon only if nobody answers)
+ *
+ * Brendan flips SHANNON_LIVE in Netlify env. No code change required.
  *
  * Edge function = near-zero cold start. Critical for voice.
  *
@@ -138,21 +141,25 @@ export default async (request, context) => {
         return new Response(twiml, { status: 200, headers: XML_HEADERS });
     }
 
-    // ❌ NOT WHITELISTED (or fallback) — Route to ElevenLabs AI
-    console.log(`🤖 AI ROUTE — selecting agent (Shannon or Eric)...`);
+    const shannonLive = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
+    if (!forceAI && !shannonLive) {
+        console.log('🔌 SHANNON_LIVE=false — routing public caller to office phones');
+        return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
+    }
+
+    // Public callers (or office overflow) — Shannon paperwork assistant
+    console.log('🤖 AI ROUTE — Shannon paperwork assistant');
 
     try {
-        // ── Route to ElevenLabs AI ──────────────────────────────────────
-        // Randomly rotate between Shannon (female) and Eric (male) on each call.
-        // Both agents have the same role — callers get variety.
-        const AGENT_IDS = [
-            Deno.env.get('ELEVENLABS_AGENT_ID') || 'agent_2001kjth4na5ftqvdf1pp3gfb1cb',  // Shannon
-            Deno.env.get('ELEVENLABS_AGENT_ID_2') || 'agent_5601kjwvbc4pf92snj0yr44fbpvd', // Eric
-        ];
-        const agentId = AGENT_IDS[Math.floor(Math.random() * AGENT_IDS.length)];
+        const shannonId = Deno.env.get('ELEVENLABS_AGENT_ID') || 'agent_2001kjth4na5ftqvdf1pp3gfb1cb';
+        const ericId = Deno.env.get('ELEVENLABS_AGENT_ID_2') || 'agent_5601kjwvbc4pf92snj0yr44fbpvd';
+        const rotateEric = (Deno.env.get('SHANNON_ROTATE_ERIC') || 'false').toLowerCase() === 'true';
+        const agentId = rotateEric
+            ? [shannonId, ericId][Math.floor(Math.random() * 2)]
+            : shannonId;
         const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
 
-        console.log(`🎙️ Selected agent: ${agentId === AGENT_IDS[0] ? 'Shannon' : 'Eric'}`);
+        console.log(`🎙️ Selected agent: ${agentId === ericId ? 'Eric' : 'Shannon'}`);
 
         if (!apiKey) {
             console.error('❌ ELEVENLABS_API_KEY not set!');
