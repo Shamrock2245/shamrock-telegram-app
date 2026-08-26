@@ -1,183 +1,83 @@
 /**
- * elevenlabs-init.js — Edge Function (FAST — near-zero cold start)
+ * elevenlabs-init.js — conversation start for Shannon.
  *
- * Fires at the start of every inbound Twilio call to the Shamrock
- * After-Hours agent. Returns:
- *   - Caller context from Google Sheets (via GAS, cached)
- *   - Past conversation memories from Mem0
- *   - Same short greeting every time; case/Mem0 context is in dynamic_variables
- *     so Shannon can listen first, then resume or offer choices.
- *
- * Edge functions run on Deno at the CDN edge (<50ms startup)
- * vs serverless functions (3-8s cold start).
+ * One memory path: Super CRM /api/agent-brain/memory/lookup (same as
+ * twilio-voice-inbound.js). Do not call Mem0 or GAS here.
+ * Greeting is always the short listen-first line.
  *
  * URL: https://shamrock-telegram.netlify.app/api/elevenlabs-init
  */
 
-const GAS_ENDPOINT = Deno.env.get('GAS_WEB_APP_URL') || '';
-const MEM0_API_URL = 'https://api.mem0.ai/v1/memories/';
-const CONTEXT_TIMEOUT_MS = 1800; // 1.8s max per fetch — well within ElevenLabs timeout
 const GREETING = 'Shamrock Bail Bonds. How may I help you today?';
 
-export default async (request, context) => {
+async function lookupCrmMemory(fromNumber) {
+    const key = Deno.env.get('GAS_API_KEY') || Deno.env.get('LEADS_INTERNAL_TOKEN') || '';
+    if (!key || !fromNumber) return {};
+    const base = (Deno.env.get('SHANNON_LEADS_URL') || 'https://leads.shamrockbailbonds.biz').replace(/\/$/, '');
+    try {
+        const res = await fetch(`${base}/api/agent-brain/memory/lookup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': key,
+                'X-Internal-Token': key,
+            },
+            body: JSON.stringify({
+                phone: fromNumber,
+                query: 'prior bail bond conversation defendant county paperwork',
+            }),
+            signal: AbortSignal.timeout(2500),
+        });
+        if (!res.ok) return {};
+        const body = await res.json();
+        return {
+            returning_client: body.returning_client || 'no',
+            known_defendant: body.known_defendant || '',
+            prior_notes: body.prior_notes || '',
+        };
+    } catch (_err) {
+        return {};
+    }
+}
+
+export default async (request) => {
     const headers = {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Headers': 'Content-Type',
     };
-
-    // CORS preflight — instant
     if (request.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers });
     }
 
+    let callerPhone = '';
+    let callSid = '';
     try {
-        // ── Parse caller info ──────────────────────────────
-        let callerPhone = '';
-        let callSid = '';
-
         if (request.method === 'POST') {
-            try {
-                const body = await request.json();
-                console.log('[elevenlabs-init] Received call-context request.');
-                callerPhone = body.caller_id || body.from || body.From || '';
-                callSid = body.call_sid || body.CallSid || '';
-            } catch (e) {
-                console.warn('Body parse failed:', e.message);
-            }
+            const body = await request.json();
+            callerPhone = body.caller_id || body.from || body.From || '';
+            callSid = body.call_sid || body.CallSid || '';
         }
+    } catch (_e) {}
+    const url = new URL(request.url);
+    if (!callerPhone) callerPhone = url.searchParams.get('caller_id') || url.searchParams.get('From') || '';
+    if (!callSid) callSid = url.searchParams.get('call_sid') || url.searchParams.get('CallSid') || '';
 
-        // Fallback: query params
-        if (!callerPhone || !callSid) {
-            const url = new URL(request.url);
-            if (!callerPhone) callerPhone = url.searchParams.get('caller_id') || url.searchParams.get('From') || '';
-            if (!callSid) callSid = url.searchParams.get('call_sid') || url.searchParams.get('CallSid') || '';
-        }
-
-        // Clean to digits, format for display
-        const digits = callerPhone.replace(/\D/g, '');
-        const displayPhone = digits.length === 10
-            ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
-            : digits.length === 11 && digits[0] === '1'
-                ? `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
-                : callerPhone;
-
-        console.log('[elevenlabs-init] Call context lookup requested.');
-
-        // ── Parallel fetch: GAS case context + Mem0 memories ─
-        const memoApiKey = Deno.env.get('MEMO_API_KEY') || '';
-        const normalizedPhone = digits.slice(-10); // last 10 digits
-
-        let caseContext = null;
-        let memories = [];
-
-        if (GAS_ENDPOINT && normalizedPhone.length >= 7) {
-            // Race both fetches with a timeout
-            const withTimeout = (promise, ms) =>
-                Promise.race([
-                    promise,
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
-                ]);
-
-            const [gasResult, mem0Result] = await Promise.allSettled([
-                // Fetch 1: GAS caller context (CacheService-backed, ~200ms on cache hit)
-                withTimeout(
-                    fetch(`${GAS_ENDPOINT}?source=caller_context&phone=${normalizedPhone}`, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'text/plain' }
-                    }).then(r => r.json()),
-                    CONTEXT_TIMEOUT_MS
-                ),
-                // Fetch 2: Mem0 memories for this caller
-                memoApiKey
-                    ? withTimeout(
-                        fetch(`${MEM0_API_URL}?user_id=${normalizedPhone}&limit=5`, {
-                            method: 'GET',
-                            headers: { 'Authorization': `Token ${memoApiKey}` }
-                        }).then(r => r.json()),
-                        CONTEXT_TIMEOUT_MS
-                    )
-                    : Promise.resolve([])
-            ]);
-
-            if (gasResult.status === 'fulfilled' && gasResult.value?.has_existing_case) {
-                caseContext = gasResult.value;
-                console.log(`✅ Case context found: ${caseContext.has_existing_case} | ${caseContext.defendant_name || ''}`);
-            } else {
-                console.warn('⚠️ GAS context miss or timeout:', gasResult.reason?.message || gasResult.status);
-            }
-
-            if (mem0Result.status === 'fulfilled' && Array.isArray(mem0Result.value) && mem0Result.value.length > 0) {
-                memories = mem0Result.value;
-                console.log(`✅ Mem0: ${memories.length} memories found for ${normalizedPhone}`);
-            } else {
-                console.warn('⚠️ Mem0 miss or timeout:', mem0Result.reason?.message || 'no memories');
-            }
-        }
-
-        // ── Build dynamic_variables ─────────────────────────
-        const hasCase = caseContext?.has_existing_case === 'yes';
-        const hasMemories = memories.length > 0;
-        const isReturning = hasCase || hasMemories;
-
-        // Flatten Mem0 memories into a readable snippet (max 300 chars)
-        const memorySummary = hasMemories
-            ? memories.slice(0, 3).map(m => m.memory).join(' | ').slice(0, 300)
-            : '';
-
-        const dynamicVars = {
-            caller_phone: displayPhone,
-            caller_phone_raw: normalizedPhone,
+    const mem = await lookupCrmMemory(callerPhone);
+    const payload = {
+        type: 'conversation_initiation_client_data',
+        dynamic_variables: {
+            caller_phone: callerPhone,
+            caller_id: callerPhone,
             call_sid: callSid,
-            // Case file fields
-            has_existing_case: hasCase ? 'yes' : 'no',
-            caller_name: caseContext?.caller_name || '',
-            defendant_name: caseContext?.defendant_name || '',
-            bond_amount: caseContext?.bond_amount || '',
-            court_date: caseContext?.court_date || '',
-            case_status: caseContext?.case_status || '',
-            case_reference: caseContext?.case_reference || '',
-            // Mem0 memory
-            is_returning_caller: isReturning ? 'yes' : 'no',
-            caller_memories: memorySummary
-        };
-
-        // Same opening every time. Shannon listens, then uses dynamic_variables.
-        return new Response(JSON.stringify({
-            type: 'conversation_initiation_client_data',
-            dynamic_variables: dynamicVars,
-            conversation_config_override: {
-                agent: {
-                    first_message: GREETING
-                }
-            }
-        }), { status: 200, headers });
-
-    } catch (err) {
-        console.error('ElevenLabs init error:', err);
-        // ALWAYS return a valid response — call must never fail at this stage
-        return new Response(JSON.stringify({
-            type: 'conversation_initiation_client_data',
-            dynamic_variables: {
-                caller_phone: '',
-                caller_phone_raw: '',
-                call_sid: '',
-                has_existing_case: 'no',
-                is_returning_caller: 'no',
-                caller_name: '',
-                defendant_name: '',
-                bond_amount: '',
-                court_date: '',
-                case_status: '',
-                case_reference: '',
-                caller_memories: ''
-            },
-            conversation_config_override: {
-                agent: {
-                    first_message: GREETING
-                }
-            }
-        }), { status: 200, headers });
-    }
+            returning_client: mem.returning_client || 'no',
+            known_defendant: mem.known_defendant || '',
+            prior_notes: mem.prior_notes || '',
+        },
+        conversation_config_override: {
+            agent: { first_message: GREETING },
+        },
+    };
+    return new Response(JSON.stringify(payload), { status: 200, headers });
 };
