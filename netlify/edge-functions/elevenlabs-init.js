@@ -9,6 +9,41 @@
  */
 
 const GREETING = 'Shamrock Bail Bonds. How may I help you today?';
+const ANON_IDS = new Set(['', 'anonymous', 'unknown', 'restricted', 'unavailable']);
+
+function extractCallerPhone(body, url) {
+    const nested = (body && body.dynamic_variables) || {};
+    const candidates = [
+        body && body.caller_id,
+        body && body.from_number,
+        body && body.from,
+        body && body.From,
+        body && body.caller_phone,
+        nested.caller_id,
+        nested.from_number,
+        nested.caller_phone,
+        url.searchParams.get('caller_id'),
+        url.searchParams.get('from_number'),
+        url.searchParams.get('From'),
+        url.searchParams.get('from'),
+    ];
+    for (const raw of candidates) {
+        const value = String(raw || '').trim();
+        if (!value || ANON_IDS.has(value.toLowerCase())) continue;
+        if (value.replace(/\D/g, '').length < 7) continue;
+        return value;
+    }
+    return '';
+}
+
+function greetingOnlyPayload() {
+    return {
+        type: 'conversation_initiation_client_data',
+        conversation_config_override: {
+            agent: { first_message: GREETING },
+        },
+    };
+}
 
 async function lookupCrmMemory(fromNumber) {
     const key = Deno.env.get('GAS_API_KEY') || Deno.env.get('LEADS_INTERNAL_TOKEN') || '';
@@ -51,18 +86,25 @@ export default async (request) => {
         return new Response(null, { status: 204, headers });
     }
 
-    let callerPhone = '';
+    let body = {};
     let callSid = '';
     try {
         if (request.method === 'POST') {
-            const body = await request.json();
-            callerPhone = body.caller_id || body.from || body.From || '';
+            body = await request.json() || {};
             callSid = body.call_sid || body.CallSid || '';
         }
-    } catch (_e) {}
+    } catch (_e) {
+        body = {};
+    }
     const url = new URL(request.url);
-    if (!callerPhone) callerPhone = url.searchParams.get('caller_id') || url.searchParams.get('From') || '';
+    const callerPhone = extractCallerPhone(body, url);
     if (!callSid) callSid = url.searchParams.get('call_sid') || url.searchParams.get('CallSid') || '';
+
+    // No caller ID: greeting only. Do not send returning_client:no — that
+    // would tell Shannon this is a new client and can wipe Mem0 context.
+    if (!callerPhone) {
+        return new Response(JSON.stringify(greetingOnlyPayload()), { status: 200, headers });
+    }
 
     const mem = await lookupCrmMemory(callerPhone);
     const payload = {
