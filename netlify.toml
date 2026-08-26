@@ -129,6 +129,10 @@
   path = "/api/twilio-voice"
 
 [[edge_functions]]
+  function = "twilio-voice-fallback"
+  path = "/api/twilio-voice-fallback"
+
+[[edge_functions]]
   function = "county-detect"
   path = "/*"
 

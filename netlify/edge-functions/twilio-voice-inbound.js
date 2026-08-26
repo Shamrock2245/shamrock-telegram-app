@@ -61,10 +61,8 @@ function isOfficeLine(digits) {
     return d === '12393322245' || d.endsWith('2393322245');
 }
 
-function dialCallerId(callerDigits) {
-    const d = digitsOnly(callerDigits);
-    if (d.length === 11 && d.startsWith('1')) return `+${d}`;
-    if (d.length === 10) return `+1${d}`;
+function dialCallerId(_callerDigits) {
+    // Twilio only accepts a Twilio number or verified caller ID on Dial.
     return TWILIO_NUMBER;
 }
 
@@ -84,6 +82,36 @@ function buildDialTwiML(callerDigits) {
 
 function rejectTwiML() {
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Reject/></Response>';
+}
+
+async function lookupMem0Context(fromNumber) {
+    const key = Deno.env.get('GAS_API_KEY') || Deno.env.get('LEADS_INTERNAL_TOKEN') || '';
+    if (!key || !fromNumber) return {};
+    const base = (Deno.env.get('SHANNON_LEADS_URL') || 'https://leads.shamrockbailbonds.biz').replace(/\/$/, '');
+    try {
+        const res = await fetch(`${base}/api/agent-brain/memory/lookup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': key,
+                'X-Internal-Token': key,
+            },
+            body: JSON.stringify({
+                phone: fromNumber,
+                query: 'prior bail bond conversation defendant county paperwork',
+            }),
+            signal: AbortSignal.timeout(2500),
+        });
+        if (!res.ok) return {};
+        const body = await res.json();
+        return {
+            returning_client: body.returning_client || 'no',
+            known_defendant: body.known_defendant || '',
+            prior_notes: body.prior_notes || '',
+        };
+    } catch (_err) {
+        return {};
+    }
 }
 
 function timingSafeEqual(a, b) {
@@ -190,6 +218,7 @@ export default async (request, context) => {
     console.log('🤖 AI ROUTE — Shannon paperwork assistant');
 
     try {
+        const mem0 = await lookupMem0Context(from);
         const shannonId = Deno.env.get('ELEVENLABS_AGENT_ID') || 'agent_2001kjth4na5ftqvdf1pp3gfb1cb';
         const ericId = Deno.env.get('ELEVENLABS_AGENT_ID_2') || 'agent_5601kjwvbc4pf92snj0yr44fbpvd';
         const rotateEric = (Deno.env.get('SHANNON_ROTATE_ERIC') || 'false').toLowerCase() === 'true';
@@ -223,6 +252,9 @@ export default async (request, context) => {
                             caller_phone: from,
                             caller_id: from,
                             call_sid: callSid,
+                            returning_client: mem0.returning_client || 'no',
+                            known_defendant: mem0.known_defendant || '',
+                            prior_notes: mem0.prior_notes || '',
                         },
                         source_info: { source: 'twilio' },
                     },
