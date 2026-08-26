@@ -5,7 +5,8 @@
  * After-Hours agent. Returns:
  *   - Caller context from Google Sheets (via GAS, cached)
  *   - Past conversation memories from Mem0
- *   - Personalized first message based on available data
+ *   - Same short greeting every time; case/Mem0 context is in dynamic_variables
+ *     so Shannon can listen first, then resume or offer choices.
  *
  * Edge functions run on Deno at the CDN edge (<50ms startup)
  * vs serverless functions (3-8s cold start).
@@ -16,6 +17,7 @@
 const GAS_ENDPOINT = Deno.env.get('GAS_WEB_APP_URL') || '';
 const MEM0_API_URL = 'https://api.mem0.ai/v1/memories/';
 const CONTEXT_TIMEOUT_MS = 1800; // 1.8s max per fetch — well within ElevenLabs timeout
+const GREETING = 'Shamrock Bail Bonds. How may I help you today?';
 
 export default async (request, context) => {
     const headers = {
@@ -55,7 +57,6 @@ export default async (request, context) => {
 
         // Clean to digits, format for display
         const digits = callerPhone.replace(/\D/g, '');
-        const last4 = digits.slice(-4);
         const displayPhone = digits.length === 10
             ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
             : digits.length === 11 && digits[0] === '1'
@@ -142,39 +143,13 @@ export default async (request, context) => {
             caller_memories: memorySummary
         };
 
-        // ── Build personalized first message ─────────────────
-        let firstMessage;
-
-        if (hasCase && caseContext.defendant_name && caseContext.caller_name) {
-            // Best case: we know who they are AND have a case
-            const status = caseContext.case_status
-                ? ` Their current status is ${caseContext.case_status}.`
-                : '';
-            const court = caseContext.court_date
-                ? ` Court date is ${caseContext.court_date}.`
-                : '';
-            firstMessage = `Hi ${caseContext.caller_name}, this is Shannon with Shamrock Bail Bonds. I can see you have an existing case with us regarding ${caseContext.defendant_name}.${status}${court} How can I help you today?`;
-        } else if (hasCase && caseContext.defendant_name) {
-            // Have a case, not sure who's calling
-            firstMessage = `Hi, this is Shannon with Shamrock Bail Bonds. I see there's an existing case regarding ${caseContext.defendant_name}. How can I help you today?`;
-        } else if (hasMemories && memorySummary) {
-            // We've spoken before, no active case found
-            firstMessage = `Hi, welcome back to Shamrock Bail Bonds! This is Shannon. It looks like we've spoken before. How can I help you today?`;
-        } else if (last4) {
-            // First-time or unrecognized caller with phone
-            firstMessage = `Hi, this is Shannon with Shamrock Bail Bonds. I can see you're calling from the number ending in ${last4}. I'm here to help 24/7 — can I get your name to get started?`;
-        } else {
-            // Total fallback
-            firstMessage = `Hi, this is Shannon with Shamrock Bail Bonds. I'm available 24/7 to help you get your loved one home. Can I get your name to start?`;
-        }
-
-        // ── Return immediately ───────────────────────────────
+        // Same opening every time. Shannon listens, then uses dynamic_variables.
         return new Response(JSON.stringify({
             type: 'conversation_initiation_client_data',
             dynamic_variables: dynamicVars,
             conversation_config_override: {
                 agent: {
-                    first_message: firstMessage
+                    first_message: GREETING
                 }
             }
         }), { status: 200, headers });
@@ -200,7 +175,7 @@ export default async (request, context) => {
             },
             conversation_config_override: {
                 agent: {
-                    first_message: "Hi, this is Shannon with Shamrock Bail Bonds. I'm available 24/7 to help you get your loved one home. Can I get your name to start?"
+                    first_message: GREETING
                 }
             }
         }), { status: 200, headers });
