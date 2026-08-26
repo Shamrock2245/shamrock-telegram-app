@@ -1,18 +1,13 @@
 /**
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
- * Twilio number +1 727-295-2245 forwards to office line +1 239-955-0301.
+ *   • (727) 295-2245 — Shannon when SHANNON_LIVE=true
+ *   • Human office — (239) 332-2245
+ *   • Jail/sheriff whitelist → 239-332-2245
+ *   • SHANNON_LIVE=false → 727 rings 332-2245; Shannon if nobody answers
  *
- *   • Public callers → ring 239-955-0301. Shannon picks up if nobody answers.
- *   • Jail/sheriff whitelist → same office line.
- *   • SHANNON_LIVE=true → Shannon answers first (Brendan's AI switch).
- *   • force_ai=true → Shannon (unanswered overflow).
- *
- * Never dial 727-295-2245 or 239-332-2245 from this webhook (loop).
- * Never dial 239-955-0301 if that line is the caller.
- *
- * Shannon texts go through BlueBubbles. Register-call cannot SIP-transfer;
- * the human destination for a future native import is 239-955-0301.
+ * Never dial 727-295-2245 from this webhook (that is Shannon's own number).
+ * 239-332-2245 must not call-forward back to 727.
  *
  * URL: https://shamrock-telegram.netlify.app/api/twilio-voice
  */
@@ -39,7 +34,7 @@ const PREFIX_WHITELIST = [
 ];
 
 const TWILIO_NUMBER = '+17272952245';
-const OFFICE_LINE = '+12399550301';
+const OFFICE_LINE = '+12393322245';
 const OFFICE_RING_SECONDS = 25;
 
 const XML_HEADERS = {
@@ -63,7 +58,7 @@ function digitsOnly(value) {
 
 function isOfficeLine(digits) {
     const d = digitsOnly(digits);
-    return d === '12399550301' || d.endsWith('2399550301');
+    return d === '12393322245' || d.endsWith('2393322245');
 }
 
 function dialCallerId(callerDigits) {
@@ -180,7 +175,7 @@ export default async (request, context) => {
     const digits = digitsOnly(from);
     console.log(`📞 Voice inbound | From: ${from} | To: ${to} | SID: ${callSid} | ForceAI: ${forceAI}`);
 
-    const shannonFront = (Deno.env.get('SHANNON_LIVE') || 'false').toLowerCase() === 'true';
+    const shannonFront = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
 
     if (!forceAI && isWhitelisted(digits)) {
         console.log(`✅ WHITELISTED — routing to ${OFFICE_LINE}`);
