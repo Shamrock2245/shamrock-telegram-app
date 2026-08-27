@@ -4,12 +4,14 @@
  * ElevenLabs register-call cannot transfer (no Twilio credentials).
  * This updates the in-progress Programmable Voice call with Dial TwiML.
  *
- * Destination is always (239) 332-2245. Never dial 727-295-2245.
+ * Shannon "want a person" rings (239) 955-0301 first, then (239) 332-2245.
+ * Never dial 727-295-2245.
  * URL: https://shamrock-telegram.netlify.app/api/twilio-transfer-office
  */
 
 const TWILIO_NUMBER = '+17272952245';
-const OFFICE_LINE = '+12393322245';
+const DESK_LINE = '+12399550301';
+const NAP_LINE = '+12393322245';
 const OFFICE_RING_SECONDS = 25;
 
 function digitsOnly(value) {
@@ -25,9 +27,12 @@ function toE164(value) {
     return '';
 }
 
-function isOfficeLine(value) {
+function isHumanDesk(value) {
     const d = digitsOnly(value);
-    return d === '12393322245' || d.endsWith('2393322245');
+    return (
+        d === '12399550301' || d.endsWith('2399550301') ||
+        d === '12393322245' || d.endsWith('2393322245')
+    );
 }
 
 function isShannonLine(value) {
@@ -45,9 +50,12 @@ function officeDialTwiml() {
         '<Response>' +
         '<Say>Please hold while I connect you to our office.</Say>' +
         `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${TWILIO_NUMBER}" answerOnBridge="true">` +
-        `<Number>${OFFICE_LINE}</Number>` +
+        `<Number>${DESK_LINE}</Number>` +
         '</Dial>' +
-        '<Say>The office did not answer. Please call 239-332-2245.</Say>' +
+        `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${TWILIO_NUMBER}" answerOnBridge="true">` +
+        `<Number>${NAP_LINE}</Number>` +
+        '</Dial>' +
+        '<Say>The office did not answer. Please call 239-955-0301, or 239-332-2245.</Say>' +
         '</Response>'
     );
 }
@@ -132,7 +140,8 @@ async function findInProgressSid(callerPhone) {
 
 async function redirectCall(callSid) {
     const twiml = officeDialTwiml();
-    if (twiml.indexOf(OFFICE_LINE) === -1) throw new Error('twiml_missing_office');
+    if (twiml.indexOf(DESK_LINE) === -1) throw new Error('twiml_missing_desk');
+    if (twiml.indexOf(NAP_LINE) === -1) throw new Error('twiml_missing_nap');
     if (/<Number>\+17272952245<\/Number>/.test(twiml)) throw new Error('twiml_dials_shannon');
     return twilioForm('/Calls/' + callSid + '.json', 'POST', { Twiml: twiml });
 }
@@ -165,11 +174,11 @@ export default async (request) => {
     }
 
     const callerPhone = toE164(body.caller_phone || body.caller_id || body.from || body.From || '');
-    if (isOfficeLine(callerPhone)) {
+    if (isHumanDesk(callerPhone)) {
         return json({
             success: false,
             error: 'loop_guard',
-            result: 'Stay on this call. I cannot transfer the office line to itself. The office is 239-332-2245.',
+            result: 'Stay on this call. I cannot transfer the office line to itself. The desk is 239-955-0301.',
         });
     }
 
@@ -185,7 +194,7 @@ export default async (request) => {
         return json({
             success: false,
             error: 'missing_call_sid',
-            result: 'I cannot connect this live call automatically. Please call the office at 239-332-2245.',
+            result: 'I cannot connect this live call automatically. Please call the office at 239-955-0301.',
         });
     }
 
@@ -196,21 +205,22 @@ export default async (request) => {
             return json({
                 success: false,
                 error: 'twilio_redirect_failed',
-                result: 'I could not connect the live call. Please call the office at 239-332-2245.',
+                result: 'I could not connect the live call. Please call the office at 239-955-0301.',
             });
         }
         return json({
             success: true,
             status: 'connecting',
-            office: '239-332-2245',
-            result: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.',
+            office: '239-955-0301',
+            backup: '239-332-2245',
+            result: 'Connecting you to the office at 239-955-0301 now. Please stay on the line.',
         });
     } catch (err) {
         console.error('Transfer error:', err.message);
         return json({
             success: false,
             error: 'transfer_error',
-            result: 'I could not connect the live call. Please call the office at 239-332-2245.',
+            result: 'I could not connect the live call. Please call the office at 239-955-0301.',
         });
     }
 };

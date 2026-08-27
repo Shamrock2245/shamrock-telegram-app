@@ -2,8 +2,9 @@
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
  *   • (727) 295-2245 — Shannon when SHANNON_LIVE=true
- *   • Human office — (239) 332-2245
- *   • Jail/sheriff whitelist → 239-332-2245
+ *   • Human office / jail whitelist — (239) 332-2245
+ *   • Shannon "want a person" live transfer is twilio-transfer-office.js
+ *     (239-955-0301, then 239-332-2245)
  *   • SHANNON_LIVE=false → 727 rings 332-2245; Shannon if nobody answers
  *
  * Never dial 727-295-2245 from this webhook (that is Shannon's own number).
