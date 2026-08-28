@@ -45,6 +45,18 @@ const XML_HEADERS = {
 
 const CANONICAL_VOICE_URL = 'https://shamrock-telegram.netlify.app/api/twilio-voice';
 
+const OPENING_TAILS = [
+    'How can I help today?',
+    'What can I do for you?',
+    'How can I help?',
+    'What do you need?',
+];
+
+function shannonOpening() {
+    const tail = OPENING_TAILS[Math.floor(Math.random() * OPENING_TAILS.length)];
+    return 'Shamrock Bail Bonds! This is Shannon. ' + tail;
+}
+
 function isWhitelisted(digits) {
     if (EXACT_WHITELIST.has(digits)) return true;
     for (const prefix of PREFIX_WHITELIST) {
@@ -260,6 +272,9 @@ export default async (request, context) => {
                             returning_client: mem0.returning_client || 'no',
                             known_defendant: mem0.known_defendant || '',
                             prior_notes: mem0.prior_notes || '',
+                        },
+                        conversation_config_override: {
+                            agent: { first_message: shannonOpening() },
                         },
                         source_info: { source: 'twilio' },
                     },

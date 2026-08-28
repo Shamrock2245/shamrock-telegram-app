@@ -35,9 +35,27 @@ function extractCallerPhone(body, url) {
     return '';
 }
 
+const OPENING_TAILS = [
+    'How can I help today?',
+    'What can I do for you?',
+    'How can I help?',
+    'What do you need?',
+];
+
+function shannonOpening() {
+    const tail = OPENING_TAILS[Math.floor(Math.random() * OPENING_TAILS.length)];
+    return 'Shamrock Bail Bonds! This is Shannon. ' + tail;
+}
+
+function openingOverride() {
+    return { agent: { first_message: shannonOpening() } };
+}
+
 function emptyInitPayload() {
-    // Do not override first_message. Agent config owns the pickup line.
-    return { type: 'conversation_initiation_client_data' };
+    return {
+        type: 'conversation_initiation_client_data',
+        conversation_config_override: openingOverride(),
+    };
 }
 
 async function lookupCrmMemory(fromNumber) {
@@ -111,6 +129,7 @@ export default async (request) => {
             known_defendant: mem.known_defendant || '',
             prior_notes: mem.prior_notes || '',
         },
+        conversation_config_override: openingOverride(),
     };
     return new Response(JSON.stringify(payload), { status: 200, headers });
 };
