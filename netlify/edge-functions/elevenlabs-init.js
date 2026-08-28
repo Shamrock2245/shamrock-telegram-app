@@ -37,9 +37,11 @@ function extractCallerPhone(body, url) {
 
 const OPENING_TAILS = [
     'How can I help today?',
+    'How can I help you today?',
     'What can I do for you?',
     'How can I help?',
-    'What do you need?',
+    "I'm here, how can I help?",
+    'What can I help you with?',
 ];
 
 function shannonOpening() {
