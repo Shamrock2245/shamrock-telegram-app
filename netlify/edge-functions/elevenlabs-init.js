@@ -8,7 +8,6 @@
  * URL: https://shamrock-telegram.netlify.app/api/elevenlabs-init
  */
 
-const GREETING = 'Shamrock Bail Bonds. How may I help you today?';
 const ANON_IDS = new Set(['', 'anonymous', 'unknown', 'restricted', 'unavailable']);
 
 function extractCallerPhone(body, url) {
@@ -36,13 +35,9 @@ function extractCallerPhone(body, url) {
     return '';
 }
 
-function greetingOnlyPayload() {
-    return {
-        type: 'conversation_initiation_client_data',
-        conversation_config_override: {
-            agent: { first_message: GREETING },
-        },
-    };
+function emptyInitPayload() {
+    // Do not override first_message. Agent config owns the pickup line.
+    return { type: 'conversation_initiation_client_data' };
 }
 
 async function lookupCrmMemory(fromNumber) {
@@ -100,10 +95,9 @@ export default async (request) => {
     const callerPhone = extractCallerPhone(body, url);
     if (!callSid) callSid = url.searchParams.get('call_sid') || url.searchParams.get('CallSid') || '';
 
-    // No caller ID: greeting only. Do not send returning_client:no — that
-    // would tell Shannon this is a new client and can wipe Mem0 context.
+    // No caller ID: do not inject returning_client:no (that can wipe Mem0 context).
     if (!callerPhone) {
-        return new Response(JSON.stringify(greetingOnlyPayload()), { status: 200, headers });
+        return new Response(JSON.stringify(emptyInitPayload()), { status: 200, headers });
     }
 
     const mem = await lookupCrmMemory(callerPhone);
@@ -116,9 +110,6 @@ export default async (request) => {
             returning_client: mem.returning_client || 'no',
             known_defendant: mem.known_defendant || '',
             prior_notes: mem.prior_notes || '',
-        },
-        conversation_config_override: {
-            agent: { first_message: GREETING },
         },
     };
     return new Response(JSON.stringify(payload), { status: 200, headers });
