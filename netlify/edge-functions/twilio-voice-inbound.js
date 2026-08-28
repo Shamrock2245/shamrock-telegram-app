@@ -2,10 +2,9 @@
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
  *   • (727) 295-2245 — Shannon when SHANNON_LIVE=true
- *   • Human office / jail whitelist — (239) 332-2245
+ *   • Human office / jail whitelist — ring 239-332-2245 and 239-955-0301 together
  *   • Shannon "want a person" live transfer is twilio-transfer-office.js
- *     (239-955-0301, then 239-332-2245)
- *   • SHANNON_LIVE=false → 727 rings 332-2245; Shannon if nobody answers
+ *   • SHANNON_LIVE=false → 727 rings both office lines; Shannon if nobody answers
  *
  * Never dial 727-295-2245 from this webhook (that is Shannon's own number).
  * 239-332-2245 must not call-forward back to 727.
@@ -35,7 +34,8 @@ const PREFIX_WHITELIST = [
 ];
 
 const TWILIO_NUMBER = '+17272952245';
-const OFFICE_LINE = '+12393322245';
+const LANDLINE = '+12393322245';
+const DESK_CELL = '+12399550301';
 const OFFICE_RING_SECONDS = 25;
 
 const XML_HEADERS = {
@@ -59,7 +59,10 @@ function digitsOnly(value) {
 
 function isOfficeLine(digits) {
     const d = digitsOnly(digits);
-    return d === '12393322245' || d.endsWith('2393322245');
+    return (
+        d === '12393322245' || d.endsWith('2393322245') ||
+        d === '12399550301' || d.endsWith('2399550301')
+    );
 }
 
 function dialCallerId(_callerDigits) {
@@ -71,7 +74,8 @@ function buildDialTwiML(callerDigits) {
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     if (!isOfficeLine(callerDigits)) {
         twiml += `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${dialCallerId(callerDigits)}" answerOnBridge="true">`;
-        twiml += `<Number>${OFFICE_LINE}</Number>`;
+        twiml += `<Number>${LANDLINE}</Number>`;
+        twiml += `<Number>${DESK_CELL}</Number>`;
         twiml += '</Dial>';
     }
     twiml += '<Say>Please hold while we connect you to our answering service.</Say>';
@@ -207,12 +211,12 @@ export default async (request, context) => {
     const shannonFront = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
 
     if (!forceAI && isWhitelisted(digits)) {
-        console.log(`✅ WHITELISTED — routing to ${OFFICE_LINE}`);
+        console.log(`✅ WHITELISTED — routing to ${LANDLINE} and ${DESK_CELL}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
     if (!forceAI && !shannonFront) {
-        console.log(`☎️ FORWARD — ${TWILIO_NUMBER} → ${OFFICE_LINE}`);
+        console.log(`☎️ FORWARD — ${TWILIO_NUMBER} → ${LANDLINE} + ${DESK_CELL}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
