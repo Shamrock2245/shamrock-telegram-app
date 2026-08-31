@@ -274,6 +274,8 @@ export default async (request, context) => {
                             returning_client: mem0.returning_client || 'no',
                             known_defendant: mem0.known_defendant || '',
                             prior_notes: mem0.prior_notes || '',
+                            is_jail_call: (digits.startsWith('1239477') || isWhitelisted(digits)) ? 'yes' : 'no',
+                            jail_facility: digits.startsWith('1239477') ? 'Lee County Jail (Press 0 to talk to inmate)' : '',
                         },
                         conversation_config_override: {
                             agent: { first_message: shannonOpening() },
