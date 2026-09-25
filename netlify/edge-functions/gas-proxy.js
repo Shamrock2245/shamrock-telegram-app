@@ -23,42 +23,48 @@
  *   })
  */
 
+// CORS headers — values unchanged from the original inline definitions.
+// Preflight gets the full set; every other response (success and error)
+// carries Access-Control-Allow-Origin so browser callers can read errors.
+const PREFLIGHT_CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-GAS-API-Key, Authorization'
+};
+const RESPONSE_CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*'
+};
+
+function jsonError(status, payload) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...RESPONSE_CORS_HEADERS }
+  });
+}
+
 export default async (req, context) => {
-  // CORS preflight
+  // CORS preflight — 204 must have a null body (Deno throws on '' with 204)
   if (req.method === 'OPTIONS') {
-    return new Response('', {
+    return new Response(null, {
       status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-GAS-API-Key, Authorization'
-      }
+      headers: PREFLIGHT_CORS_HEADERS
     });
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return jsonError(405, { error: 'Method not allowed' });
   }
 
   const GAS_URL = Deno.env.get('GAS_WEB_APP_URL') || Deno.env.get('GAS_ENDPOINT');
   if (!GAS_URL) {
     console.error('[gas-proxy] GAS_WEB_APP_URL not configured');
-    return new Response(JSON.stringify({ error: 'Proxy misconfigured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return jsonError(500, { error: 'Proxy misconfigured' });
   }
 
   // Extract the API key from the proxy header and pass it through to GAS
   const apiKey = req.headers.get('X-GAS-API-Key') || '';
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Missing X-GAS-API-Key header' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return jsonError(401, { error: 'Missing X-GAS-API-Key header' });
   }
 
   try {
@@ -71,10 +77,7 @@ export default async (req, context) => {
     try {
       payload = JSON.parse(body);
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return jsonError(400, { error: 'Invalid JSON body' });
     }
 
     // Ensure the apiKey is in the payload (GAS expects it there)
@@ -112,19 +115,16 @@ export default async (req, context) => {
       status: gasResponse.status,
       headers: {
         'Content-Type': contentType,
-        'Access-Control-Allow-Origin': '*',
+        ...RESPONSE_CORS_HEADERS,
         'X-Proxied-By': 'shamrock-gas-proxy'
       }
     });
 
   } catch (error) {
     console.error('[gas-proxy] Proxy error:', error.message);
-    return new Response(JSON.stringify({
+    return jsonError(502, {
       error: 'Proxy request failed',
       detail: error.message
-    }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json' }
     });
   }
 };
