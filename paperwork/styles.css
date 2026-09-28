@@ -266,3 +266,136 @@ body.embed .help-bar { display: none; }
     .role-choice { min-height: 132px; grid-template-columns: 1fr; row-gap: 7px; text-align: center; }
     .role-choice i { grid-row: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LIVE CAMERA VIEWFINDER & KIOSK TABLET STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.camera-card {
+    max-width: 480px;
+    padding: 22px 18px 24px;
+}
+
+.camera-viewport-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    max-height: 320px;
+    background: #020617;
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 12px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+}
+
+.camera-viewport-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-guide-box {
+    position: absolute;
+    inset: 12% 8%;
+    border: 2px dashed rgba(16, 185, 129, 0.85);
+    border-radius: 12px;
+    pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+}
+
+.camera-guide-box .guide-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--shamrock-emerald);
+    background: rgba(2, 6, 23, 0.85);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.camera-guide-box .corner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: var(--shamrock-emerald);
+    border-style: solid;
+}
+.camera-guide-box .corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 8px; }
+.camera-guide-box .corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 8px; }
+.camera-guide-box .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 8px; }
+.camera-guide-box .corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 8px; }
+
+.camera-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.camera-controls .shamrock-btn {
+    flex: 1;
+}
+
+.kiosk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: var(--shamrock-emerald);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.manual-entry-hint {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.manual-entry-hint button {
+    color: var(--shamrock-emerald);
+    text-decoration: underline;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.camera-launch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #022c22;
+    font-weight: 700;
+    font-size: 0.98rem;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.camera-launch-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.38);
+}
+

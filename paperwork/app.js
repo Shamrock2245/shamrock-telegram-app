@@ -34,6 +34,9 @@ const state = {
     selfieReady: false,
     idFile: null,
     role: '',
+    cameraStream: null,
+    cameraFacingMode: 'environment',
+    isKiosk: false,
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -58,6 +61,12 @@ function bindUi() {
     document.getElementById('sendPinBtn').addEventListener('click', sendPin);
     document.getElementById('verifyPinBtn').addEventListener('click', verifyPin);
     document.getElementById('scanIdBtn').addEventListener('click', scanId);
+    document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+    document.getElementById('flipCameraBtn').addEventListener('click', flipCamera);
+    document.getElementById('snapPhotoBtn').addEventListener('click', snapPhoto);
+    document.getElementById('manualDetailsBtn').addEventListener('click', skipToManualEntry);
+    const manualLink = document.getElementById('manualDetailsLink');
+    if (manualLink) manualLink.addEventListener('click', skipToManualEntry);
     document.getElementById('openFieldsBtn').addEventListener('click', () => openPopup('fields'));
     document.getElementById('saveFieldsBtn').addEventListener('click', saveFields);
     document.getElementById('confirmAddressBtn').addEventListener('click', confirmAddress);
@@ -80,6 +89,16 @@ function bindUi() {
 function applyQuery() {
     const q = new URLSearchParams(window.location.search);
     if (q.get('embed') === '1') document.body.classList.add('embed');
+    const isKioskMode = q.get('kiosk') === '1' || q.get('mode') === 'kiosk' || q.get('source') === 'wix-lobby-tablet';
+    if (isKioskMode) {
+        state.isKiosk = true;
+        const badge = document.getElementById('kioskBadge');
+        if (badge) badge.classList.remove('hidden');
+        const idTitle = document.getElementById('identityTitle');
+        if (idTitle) idTitle.textContent = 'Scan ID or Enter Details';
+        const idCopy = document.getElementById('identityCopy');
+        if (idCopy) idCopy.textContent = 'Position your ID inside the tablet camera box or enter details manually.';
+    }
     const phone = (q.get('phone') || '').replace(/\D/g, '');
     if (phone.length >= 10) {
         state.phone = phone.slice(-10);
@@ -180,6 +199,7 @@ function openPopup(name) {
 }
 
 function closePopup(name) {
+    if (name === 'camera') stopCamera();
     const el = document.getElementById('popup-' + name);
     if (!el) return;
     el.classList.remove('open');
@@ -279,63 +299,211 @@ function onIdFile(e) {
     if (!file) return;
     state.idFile = file;
     document.getElementById('idLabel').textContent = file.name || 'ID selected';
+    const preview = document.getElementById('idPreview');
+    preview.classList.remove('hidden');
+    preview.innerHTML = `<img src="${URL.createObjectURL(file)}" style="max-height:120px;border-radius:8px;border:1px solid var(--border-color);margin-bottom:8px;display:block;"><span>${file.name}</span>`;
     maybeEnableScan();
+    scanId();
 }
 
 function maybeEnableScan() {
-    document.getElementById('scanIdBtn').disabled = !state.idFile;
+    const btn = document.getElementById('scanIdBtn');
+    if (btn) {
+        btn.disabled = !state.idFile;
+        if (state.idFile) btn.classList.remove('hidden');
+    }
+}
+
+async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('identityStatus', 'Live camera stream not supported on this browser. Opening file capture.', 'info');
+        document.getElementById('idInput').click();
+        return;
+    }
+    stopCamera();
+    setStatus('identityStatus', 'Starting camera…', 'info');
+    try {
+        const constraints = {
+            video: {
+                facingMode: { ideal: state.cameraFacingMode },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        };
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            // Fallback for tablets/kiosks with single camera or facingMode rejection
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+        state.cameraStream = stream;
+        const video = document.getElementById('cameraVideo');
+        video.srcObject = stream;
+        await video.play();
+        openPopup('camera');
+        setStatus('identityStatus', '', '');
+    } catch (err) {
+        console.warn('Camera access error:', err);
+        setStatus('identityStatus', 'Camera access blocked. Opening file upload.', 'warning');
+        document.getElementById('idInput').click();
+    }
+}
+
+function stopCamera() {
+    if (state.cameraStream) {
+        state.cameraStream.getTracks().forEach((track) => track.stop());
+        state.cameraStream = null;
+    }
+    const video = document.getElementById('cameraVideo');
+    if (video) video.srcObject = null;
+}
+
+function flipCamera() {
+    state.cameraFacingMode = state.cameraFacingMode === 'environment' ? 'user' : 'environment';
+    startCamera();
+}
+
+function snapPhoto() {
+    const video = document.getElementById('cameraVideo');
+    if (!video || !video.videoWidth) {
+        setStatus('identityStatus', 'Camera not ready. Please try again.', 'error');
+        return;
+    }
+    const canvas = document.getElementById('cameraCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        stopCamera();
+        closePopup('camera');
+        state.idFile = new File([blob], 'camera-id.jpg', { type: 'image/jpeg' });
+        document.getElementById('idLabel').textContent = 'Camera photo captured';
+        const preview = document.getElementById('idPreview');
+        preview.classList.remove('hidden');
+        preview.innerHTML = `<img src="${URL.createObjectURL(blob)}" style="max-height:120px;border-radius:8px;border:1px solid var(--border-color);margin-bottom:8px;display:block;"><span>Photo captured from camera</span>`;
+        maybeEnableScan();
+        scanId();
+    }, 'image/jpeg', 0.90);
+}
+
+function skipToManualEntry() {
+    stopCamera();
+    closePopup('camera');
+    setStatus('identityStatus', 'Entering details manually. Staff will verify your ID.', 'ok');
+    showScreen('ready');
+    openPopup('fields');
 }
 
 async function scanId() {
     if (!state.idFile) return;
-    setStatus('identityStatus', 'Scanning ID…');
+    setStatus('identityStatus', 'Scanning ID with AI Vision…');
     const form = new FormData();
     form.set('session_token', state.sessionToken);
     form.set('file', state.idFile, state.idFile.name || 'id.jpg');
-    const data = await api('id-ocr', {}, { form });
-    if (!data.success || !data.extracted) {
-        setStatus('identityStatus', data.error || 'Could not read that ID. Try a clearer photo.', 'error');
-        return;
+    try {
+        const data = await api('id-ocr', {}, { form });
+        if (!data.success || !data.extracted || !Object.keys(data.extracted).length) {
+            setStatus('identityStatus', 'Could not auto-read ID clearly. Please review or enter your details manually.', 'warning');
+            showScreen('ready');
+            openPopup('fields');
+            return;
+        }
+        state.extracted = data.extracted;
+        fillFromExtracted(data.extracted);
+        const preview = document.getElementById('idPreview');
+        preview.classList.remove('hidden');
+        const details = [data.extracted.full_name, data.extracted.dob, data.extracted.dl_number].filter(Boolean).join(' · ');
+        preview.textContent = details ? `Verified: ${details}` : 'ID read successfully.';
+        setStatus('identityStatus', 'ID read. Review the address and your role-specific details.', 'ok');
+        openPopup('address');
+    } catch (err) {
+        console.warn('ID OCR non-fatal:', err);
+        setStatus('identityStatus', 'Could not reach scanner service. You can enter details manually.', 'warning');
+        showScreen('ready');
+        openPopup('fields');
     }
-    state.extracted = data.extracted;
-    fillFromExtracted(data.extracted);
-    const preview = document.getElementById('idPreview');
-    preview.classList.remove('hidden');
-    preview.textContent = [data.extracted.full_name, data.extracted.dob, data.extracted.dl_number].filter(Boolean).join(' · ');
-    setStatus('identityStatus', 'ID read. Review the address and your role-specific details.', 'ok');
-    openPopup('address');
 }
 
 function fillFromExtracted(ext) {
-    document.getElementById('addrStreet').value = ext.address || '';
-    document.getElementById('addrCity').value = ext.city || '';
-    document.getElementById('addrState').value = ext.state || '';
-    document.getElementById('addrZip').value = ext.zip || '';
-    document.getElementById('fieldName').value = ext.full_name || document.getElementById('fieldName').value;
+    const street = ext.address || '';
+    const city = ext.city || '';
+    const stateVal = ext.state || ext.dl_state || '';
+    const zip = ext.zip || '';
+    const name = ext.full_name || '';
+    const dl = ext.dl_number || '';
+    const dob = ext.dob || '';
+
+    // Popup-address inputs
+    const elAddrStreet = document.getElementById('addrStreet');
+    if (elAddrStreet) elAddrStreet.value = street;
+    const elAddrCity = document.getElementById('addrCity');
+    if (elAddrCity) elAddrCity.value = city;
+    const elAddrState = document.getElementById('addrState');
+    if (elAddrState) elAddrState.value = stateVal;
+    const elAddrZip = document.getElementById('addrZip');
+    if (elAddrZip) elAddrZip.value = zip;
+
+    // Popup-fields inputs
+    const elFieldsStreet = document.getElementById('fieldsStreet');
+    if (elFieldsStreet) elFieldsStreet.value = street;
+    const elFieldsCity = document.getElementById('fieldsCity');
+    if (elFieldsCity) elFieldsCity.value = city;
+    const elFieldsState = document.getElementById('fieldsState');
+    if (elFieldsState) elFieldsState.value = stateVal;
+    const elFieldsZip = document.getElementById('fieldsZip');
+    if (elFieldsZip) elFieldsZip.value = zip;
+
+    const elName = document.getElementById('fieldName');
+    if (elName && name) elName.value = name;
+    const elDob = document.getElementById('fieldDob');
+    if (elDob && dob) elDob.value = dob;
+
     const defDl = document.getElementById('fieldDefendantDl');
+    const indDl = document.getElementById('fieldDl');
     if (state.role === 'defendant') {
-        if (defDl) defDl.value = ext.dl_number || defDl.value;
+        if (defDl && dl) defDl.value = dl;
     } else {
-        document.getElementById('fieldDl').value = ext.dl_number || document.getElementById('fieldDl').value;
+        if (indDl && dl) indDl.value = dl;
     }
 }
 
 function confirmAddress() {
+    // Sync address fields to popup-fields
+    const elStreet = document.getElementById('fieldsStreet');
+    if (elStreet && !elStreet.value) elStreet.value = val('addrStreet');
+    const elCity = document.getElementById('fieldsCity');
+    if (elCity && !elCity.value) elCity.value = val('addrCity');
+    const elState = document.getElementById('fieldsState');
+    if (elState && !elState.value) elState.value = val('addrState');
+    const elZip = document.getElementById('fieldsZip');
+    if (elZip && !elZip.value) elZip.value = val('addrZip');
+
     closePopup('address');
     showScreen('ready');
     openPopup('fields');
 }
 
 function collectFields() {
+    const street = val('fieldsStreet') || val('addrStreet');
+    const city = val('fieldsCity') || val('addrCity');
+    const stateVal = val('fieldsState') || val('addrState');
+    const zip = val('fieldsZip') || val('addrZip');
+    const dob = val('fieldDob') || (state.extracted && state.extracted.dob) || '';
+
     if (state.role === 'defendant') {
         return {
             defendant_name: val('fieldName'),
-            defendant_address: val('addrStreet'),
-            defendant_city: val('addrCity'),
-            defendant_state: val('addrState'),
-            defendant_zip: val('addrZip'),
+            defendant_address: street,
+            defendant_city: city,
+            defendant_state: stateVal,
+            defendant_zip: zip,
             defendant_dl: val('fieldDefendantDl') || val('fieldDl'),
-            defendant_dob: state.extracted.dob || '',
+            defendant_dob: dob,
         };
     }
     const ref = document.getElementById('fieldRef1').value.trim();
@@ -344,12 +512,12 @@ function collectFields() {
         indemnitor_name: val('fieldName'),
         IndemnitorName: val('fieldName'),
         FullName: val('fieldName'),
-        indemnitor_address: val('addrStreet'),
-        indemnitor_city: val('addrCity'),
-        indemnitor_state: val('addrState'),
-        indemnitor_zip: val('addrZip'),
+        indemnitor_address: street,
+        indemnitor_city: city,
+        indemnitor_state: stateVal,
+        indemnitor_zip: zip,
         indemnitor_dl: val('fieldDl'),
-        indemnitor_dob: state.extracted.dob || '',
+        indemnitor_dob: dob,
         indemnitor_relationship: val('fieldRelationship'),
         indemnitor_employer: val('fieldEmployer'),
         indemnitor_employer_phone: val('fieldEmployerPhone'),

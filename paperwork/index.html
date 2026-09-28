@@ -94,29 +94,37 @@
 
         <section class="screen" id="screen-identity">
             <div class="hero">
+                <div id="kioskBadge" class="kiosk-badge hidden"><i class="ph ph-device-tablet"></i> Office Kiosk / Tablet Mode</div>
                 <div class="hero-icon"><i class="ph ph-identification-card"></i></div>
                 <h2 id="identityTitle">Start with your ID</h2>
-                <p id="identityCopy">Take a clear photo of your government ID. We will read it, then let you review the information in your own role-specific fields.</p>
+                <p id="identityCopy">Take a clear photo of your government ID with your camera or enter your details manually. You will review everything before submission.</p>
             </div>
             <div class="shamrock-card form-card">
+                <button type="button" class="shamrock-btn camera-launch-btn btn-full" id="startCameraBtn">
+                    <i class="ph ph-camera"></i> Scan ID with Camera
+                </button>
                 <div class="capture-grid">
                     <label class="capture-tile capture-tile-primary">
                         <input type="file" id="idInput" accept="image/*" capture="environment" hidden>
                         <i class="ph ph-credit-card"></i>
-                        <strong>ID front</strong>
-                        <span id="idLabel">Driver license or state ID</span>
+                        <strong>Upload ID Photo</strong>
+                        <span id="idLabel">File or camera photo</span>
                     </label>
                     <label class="capture-tile">
                         <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
-                        <i class="ph ph-camera"></i>
+                        <i class="ph ph-user-focus"></i>
                         <strong>Selfie (optional)</strong>
                         <span id="selfieLabel">Add if staff requests it</span>
                     </label>
                 </div>
                 <div id="idPreview" class="id-preview hidden"></div>
-                <button type="button" class="shamrock-btn shamrock-btn-primary btn-full" id="scanIdBtn" disabled>
+                <button type="button" class="shamrock-btn shamrock-btn-primary btn-full hidden" id="scanIdBtn" disabled>
                     Scan ID and review my information
                 </button>
+                <button type="button" class="shamrock-btn btn-ghost btn-full" id="manualDetailsBtn">
+                    <i class="ph ph-pencil-simple-line"></i> Enter details manually without ID scan
+                </button>
+                <p class="manual-entry-hint">No ID card or scanner not working? <button type="button" id="manualDetailsLink">Skip scan & enter details manually →</button></p>
                 <p class="status-line" id="identityStatus"></p>
             </div>
         </section>
@@ -177,6 +185,36 @@
         </section>
     </main>
 
+    <!-- Camera Viewfinder Modal for Smartphones and Kiosks/Tablets -->
+    <div class="popup" id="popup-camera" role="dialog" aria-modal="true" hidden>
+        <div class="popup-backdrop" data-close="camera"></div>
+        <div class="popup-card camera-card">
+            <div class="popup-accent"></div>
+            <h3>Position ID in Frame</h3>
+            <p class="popup-sub">Hold your driver license or state ID steady inside the box.</p>
+            <div class="camera-viewport-wrap">
+                <video id="cameraVideo" autoplay playsinline muted></video>
+                <div class="camera-guide-box">
+                    <div class="corner tl"></div><div class="corner tr"></div>
+                    <div class="corner bl"></div><div class="corner br"></div>
+                    <span class="guide-text">Driver's License / State ID</span>
+                </div>
+                <canvas id="cameraCanvas" hidden></canvas>
+            </div>
+            <div class="camera-controls">
+                <button type="button" class="shamrock-btn btn-ghost" id="flipCameraBtn" title="Switch front/rear camera">
+                    <i class="ph ph-camera-rotate"></i> Flip
+                </button>
+                <button type="button" class="shamrock-btn shamrock-btn-primary" id="snapPhotoBtn">
+                    <i class="ph ph-aperture"></i> Snap Photo
+                </button>
+                <button type="button" class="shamrock-btn btn-ghost" data-close="camera">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="popup" id="popup-address" role="dialog" aria-modal="true" hidden>
         <div class="popup-backdrop" data-close="address"></div>
         <div class="popup-card">
@@ -220,7 +258,35 @@
             </div>
             <div class="form-group">
                 <label for="fieldName">Legal name</label>
-                <input type="text" id="fieldName" autocomplete="name">
+                <input type="text" id="fieldName" autocomplete="name" placeholder="First Middle Last">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fieldDob">Date of birth</label>
+                    <input type="date" id="fieldDob" autocomplete="bday">
+                </div>
+                <div class="form-group" id="rowDlInput">
+                    <label for="fieldDl">DL / ID #</label>
+                    <input type="text" id="fieldDl" placeholder="Driver license or state ID">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fieldsStreet">Home street address</label>
+                <input type="text" id="fieldsStreet" autocomplete="address-line1" placeholder="123 Main St, Apt 4B">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fieldsCity">City</label>
+                    <input type="text" id="fieldsCity" autocomplete="address-level2" placeholder="Fort Myers">
+                </div>
+                <div class="form-group">
+                    <label for="fieldsState">State</label>
+                    <input type="text" id="fieldsState" maxlength="2" autocomplete="address-level1" placeholder="FL">
+                </div>
+                <div class="form-group">
+                    <label for="fieldsZip">ZIP code</label>
+                    <input type="text" id="fieldsZip" inputmode="numeric" maxlength="10" autocomplete="postal-code" placeholder="33901">
+                </div>
             </div>
             <div id="cosignerFields">
             <div class="form-group" id="rowRelationship">
@@ -235,10 +301,6 @@
                 <div class="form-group">
                     <label for="fieldEmployerPhone">Work phone</label>
                     <input type="tel" id="fieldEmployerPhone" autocomplete="tel">
-                </div>
-                <div class="form-group">
-                    <label for="fieldDl">DL / ID #</label>
-                    <input type="text" id="fieldDl">
                 </div>
             </div>
             <div class="form-group">
