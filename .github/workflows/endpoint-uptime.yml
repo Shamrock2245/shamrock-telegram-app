@@ -1,0 +1,35 @@
+# GET-only uptime for the production site and one non-mutating function.
+# Schedule is every 15 minutes on odd minutes (01, 16, 31, 46), offset from :00/:15/:30/:45.
+#
+# Disable: GitHub → Actions → Endpoint uptime → Disable workflow, or delete this file.
+# The schedule runs only from the default branch. workflow_dispatch stops when the workflow is disabled.
+name: Endpoint uptime
+
+on:
+  schedule:
+    - cron: '1,16,31,46 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: endpoint-uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe production endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Probe and file endpoint-down issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash .github/scripts/endpoint-uptime.sh

@@ -1,0 +1,33 @@
+# Weekly dependency PRs. Minor and patch updates are grouped.
+# Majors stay as their own PRs. At most 5 open Dependabot PRs per ecosystem.
+#
+# Disable: delete this file, or GitHub → Insights → Dependency graph → Dependabot → Disable.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

@@ -1,0 +1,57 @@
+# Install, then build / lint / test only when package.json already defines those scripts.
+# Also syntax-checks Netlify functions and parses netlify.toml.
+#
+# Disable: GitHub → Actions → CI → Disable workflow, or delete this file.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Install, scripts, syntax, contacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build, lint, and test when those scripts exist
+        run: node .github/scripts/run-present-npm-scripts.mjs
+
+      - name: Check Netlify function syntax
+        run: |
+          set -eu
+          status=0
+          found=0
+          while IFS= read -r -d '' file; do
+            found=1
+            echo "node --check $file"
+            node --check "$file" || status=1
+          done < <(find netlify/functions netlify/edge-functions -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) -print0)
+          if [ "$found" -eq 0 ]; then
+            echo "No Netlify function files found"
+            exit 1
+          fi
+          exit "$status"
+
+      - name: Validate netlify.toml
+        run: python3 .github/scripts/validate-netlify-toml.py
+
+      - name: Brand contact guard
+        run: node .github/scripts/check-brand-contacts.mjs
