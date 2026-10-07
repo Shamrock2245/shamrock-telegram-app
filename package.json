@@ -6,7 +6,7 @@
     "type": "module",
     "dependencies": {
         "openai": "^4.0.0",
-        "@netlify/functions": "^2.0.0",
+        "@netlify/functions": "^6.0.2",
         "@netlify/blobs": "^7.0.0"
     },
     "devDependencies": {
