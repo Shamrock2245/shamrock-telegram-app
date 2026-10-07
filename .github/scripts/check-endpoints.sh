@@ -20,19 +20,35 @@ probe() {
   local expected="$3"
   local needle="$4"
   local body
-  local meta
+  local meta=""
   local code
   local final
+  local curl_status=0
+  local reported_exit=0
+  local write_exit
+  local rest
   body="$(mktemp)"
-  meta="$(curl -sS -L --max-redirs 2 --max-time 20 \
+  # Keep curl's exit status. %{http_code} and a partial body can still look
+  # successful when the transfer times out or is truncated. %{exitcode} is
+  # curl's own exit status and is written even when the transfer fails.
+  if ! meta="$(curl -sS -L --max-redirs 2 --max-time 20 \
     -A 'shamrock-telegram-uptime' \
     -H 'Accept: text/html,application/json' \
     -X GET \
     -o "$body" \
-    -w '%{http_code} %{url_effective}' \
-    -- "$url" 2>"$body.err")" || true
-  code="${meta%% *}"
-  final="${meta#* }"
+    -w '%{exitcode} %{http_code} %{url_effective}' \
+    -- "$url" 2>"$body.err")"; then
+    curl_status=$?
+  fi
+  write_exit="${meta%% *}"
+  rest="${meta#* }"
+  code="${rest%% *}"
+  final="${rest#* }"
+  if [[ "$curl_status" -ne 0 ]]; then
+    reported_exit="$curl_status"
+  elif [[ "$write_exit" =~ ^[0-9]+$ && "$write_exit" -ne 0 ]]; then
+    reported_exit="$write_exit"
+  fi
   if [[ ! "$code" =~ ^[0-9]{3}$ ]]; then
     code="000"
     final="$url"
@@ -41,12 +57,15 @@ probe() {
   local host
   host="$(printf '%s' "$final" | sed -E 's#^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+).*#\1#')"
   local reason=""
+  if [[ "$reported_exit" -ne 0 ]]; then
+    reason="curl exited ${reported_exit}"
+  fi
   if [[ "$code" != "$expected" ]]; then
-    reason="expected HTTP ${expected}, got ${code}"
+    reason="${reason:+${reason}; }expected HTTP ${expected}, got ${code}"
   elif [[ "$host" != "shamrock-telegram.netlify.app" ]]; then
-    reason="redirected to ${final}"
+    reason="${reason:+${reason}; }redirected to ${final}"
   elif [[ -n "$needle" ]] && ! grep -F -q -- "$needle" "$body"; then
-    reason="response body did not contain the expected marker"
+    reason="${reason:+${reason}; }response body did not contain the expected marker"
   fi
 
   if [[ -n "$reason" ]]; then
@@ -62,13 +81,15 @@ probe() {
   rm -f "$body" "$body.err"
 }
 
-probe "homepage" "https://shamrock-telegram.netlify.app/" "200" "Shamrock Bail Bonds"
-probe "send-paperwork-get" "https://shamrock-telegram.netlify.app/api/send-paperwork" "405" "Method not allowed"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  probe "homepage" "https://shamrock-telegram.netlify.app/" "200" "Shamrock Bail Bonds"
+  probe "send-paperwork-get" "https://shamrock-telegram.netlify.app/api/send-paperwork" "405" "Method not allowed"
 
-if [[ "$failures" -ne 0 ]]; then
-  echo "${failures} endpoint probe(s) failed"
-  exit 1
+  if [[ "$failures" -ne 0 ]]; then
+    echo "${failures} endpoint probe(s) failed"
+    exit 1
+  fi
+
+  echo "All endpoint probes passed"
+  exit 0
 fi
-
-echo "All endpoint probes passed"
-exit 0

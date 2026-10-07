@@ -7,9 +7,10 @@
  *   https://www.shamrockbailbonds.biz
  *
  * Hard failures:
- *   - shamrockbailbonds.com, shamrockbail.com, shamrockbail.biz
- *   - any other host containing "shamrock" except shamrockbailbonds.biz
- *     (and its subdomains) and shamrock-telegram.netlify.app
+ *   - shamrockbailbonds.<tld> and shamrockbail.<tld> for any TLD, including
+ *     www, except shamrockbailbonds.biz and www.shamrockbailbonds.biz
+ *   - any other host containing "shamrock" except subdomains of
+ *     shamrockbailbonds.biz and shamrock-telegram.netlify.app
  *   - a phone one digit away from a canonical number
  *   - an email one character away from the canonical admin address,
  *     or an email on a disallowed shamrock host
@@ -58,7 +59,10 @@ const DISPLAY_PHONE_PATTERNS = [
 const BARE_PHONE_PATTERN = /(?<!\d)1?(?:239|727)\d{7}(?!\d)/g;
 const URL_RE = /\bhttps?:\/\/[^\s"'<>)\]]+/gi;
 const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
-const HOST_RE = /\b(?:[a-z0-9-]+\.)*shamrock[a-z0-9.-]*\.(?:com|biz|net|org|info|us)\b/gi;
+// Bare hostnames, any TLD. The final label is not a fixed list, so
+// shamrockbailbonds.co and shamrockbailbonds.bix are both matches.
+// Allowed hosts are decided by isAllowedShamrockHost, not by this pattern.
+const HOST_RE = /(?<![a-z0-9-])(?:[a-z0-9-]+\.)*shamrock[a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z][a-z0-9-]{1,}\b/gi;
 
 function levenshtein(a, b) {
   const rows = a.length + 1;
@@ -105,7 +109,12 @@ function hostOf(value) {
 
 function isAllowedShamrockHost(host) {
   let h = host.toLowerCase().replace(/\.$/, '');
+  // www.shamrockbailbonds.biz is the canonical site. Other www hosts,
+  // including www.shamrockbailbonds.co, stay disallowed.
+  if (h === 'www.shamrockbailbonds.biz') return true;
   if (h.startsWith('www.')) h = h.slice(4);
+  // Apex and subdomains of the canonical registrable domain only.
+  // shamrockbailbonds.co, shamrockbailbonds.bix, and shamrockbail.<tld> do not match.
   if (h === 'shamrockbailbonds.biz' || h.endsWith('.shamrockbailbonds.biz')) return true;
   if (h === 'shamrock-telegram.netlify.app' || h.endsWith('.shamrock-telegram.netlify.app')) return true;
   return false;
@@ -220,10 +229,19 @@ function selfTest() {
     ['(239) 555-1234', 'ok'],
     ['(555) 123-4567', 'ok'],
     ['https://www.shamrockbailbonds.biz', 'ok'],
+    ['www.shamrockbailbonds.biz', 'ok'],
+    ['shamrockbailbonds.biz', 'ok'],
     ['https://leads.shamrockbailbonds.biz/api', 'ok'],
+    ['sign.shamrockbailbonds.biz', 'ok'],
     ['https://sign.shamrockbailbonds.biz', 'ok'],
     ['https://shamrock-telegram.netlify.app', 'ok'],
     ['admin@shamrockbailbonds.biz', 'ok'],
+    ['shamrockbailbonds.co', 'error'],
+    ['shamrockbailbonds.bix', 'error'],
+    ['shamrockbail.co', 'error'],
+    ['shamrockbail.bix', 'error'],
+    ['www.shamrockbailbonds.co', 'error'],
+    ['admin@shamrockbailbonds.co', 'error'],
     ['239-332-2246', 'error'],
     ['https://shamrockbailbonds.com', 'error'],
     ['see shamrockbail.com', 'error'],
