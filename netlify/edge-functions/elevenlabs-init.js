@@ -46,7 +46,7 @@ const OPENING_TAILS = [
 
 function shannonOpening() {
     const tail = OPENING_TAILS[Math.floor(Math.random() * OPENING_TAILS.length)];
-    return 'Shamrock Bail Bonds! This is Shannon. ' + tail;
+    return 'Shamrock Bail Bonds! This is Brendan. ' + tail;
 }
 
 function openingOverride() {
