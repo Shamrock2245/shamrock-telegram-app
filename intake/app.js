@@ -447,7 +447,7 @@ function submitForm() {
             crmPayload.id_image_b64 = idImage.b64;
             crmPayload.id_filename = idImage.name;
         }
-        return fetch('/.netlify/functions/crm-intake', {
+        return fetch('/api/crm-intake', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(crmPayload)

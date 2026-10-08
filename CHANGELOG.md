@@ -7,6 +7,7 @@ All notable changes to the Shamrock Telegram channel are recorded here.
 ### Changed
 
 - `POST /api/crm-intake` checks Telegram `initData` against `TELEGRAM_BOT_TOKEN` and refuses the request when that check fails. It also limits each Telegram user to 20 submits per 10 minutes.
+- The mini-app posts intake to `/api/crm-intake`, the path the function declares. A custom function path replaces the default `/.netlify/functions/` address.
 - When the CRM call fails, the function returns JSON `crm_failed` and does not call GAS. The mini-app then posts the lead once, including ID images, through the browser's GAS queue. The page says the application was not saved only when that browser save fails.
 - ID scan and CRM submit each abort after 3.5 seconds, so the two calls stay near 7 seconds and under Netlify's 10 second limit. Shannon's notify-bondsman tool still forwards the callback and staff alert to GAS after a CRM success, and it reuses the call's case reference.
 

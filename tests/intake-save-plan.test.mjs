@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
+import { config as crmIntakeConfig } from '../netlify/functions/crm-intake.mjs';
+
 const src = fs.readFileSync(new URL('../intake/app.js', import.meta.url), 'utf8');
 const start = src.indexOf('function intakeSavePlan');
 const end = src.indexOf('\nfunction uploadFileToGAS');
@@ -90,6 +92,12 @@ test('a network failure before a response saves through GAS once', async () => {
     });
     assert.equal(gasSaves, 1);
     assert.equal(alerts, 0);
+});
+
+test('the mini-app posts to the path the crm-intake function declares', () => {
+    const calls = [...src.matchAll(/fetch\(\s*'([^']*)'/g)].map((match) => match[1]);
+    const intakeCalls = calls.filter((url) => url.includes('crm-intake'));
+    assert.deepEqual(intakeCalls, [crmIntakeConfig.path]);
 });
 
 test('the submit catch no longer claims a lost lead was saved', () => {
