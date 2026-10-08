@@ -1,13 +1,36 @@
 /**
- * Compliance Digest — Daily Staff Digest
- * Cron: 0 13 * * * (8 AM ET = 1 PM UTC)
+ * Compliance Digest — Staff Digest (UNSCHEDULED)
+ *
+ * Not scheduled: this module no longer exports a `config.schedule`, so Netlify does not
+ * run it on a cron. It used to run daily at `0 13 * * *` (9:00 AM EDT / 8:00 AM EST).
+ * It was unscheduled because GAS has no `get_compliance_report` action yet, so each run
+ * only produced an AI digest of an error response. Re-add a schedule only after that
+ * action exists and the output has been reviewed.
+ *
+ * DISABLED BY DEFAULT: without a schedule this is an ordinary function that anyone could
+ * call at /.netlify/functions/compliance-digest. So the handler returns 410 'disabled'
+ * before any GAS, OpenAI or other outbound call unless the Netlify env var
+ * COMPLIANCE_DIGEST_ENABLED is exactly the string 'true'. That flag is not set in Netlify.
  *
  * Fetches missed check-ins and compliance issues from GAS,
  * generates an AI summary, and posts to Slack.
  */
 import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
 
+// Strictly the string 'true'. Anything else ('1', 'TRUE', 'yes', unset) keeps it disabled.
+export function complianceDigestEnabled() {
+    return process.env.COMPLIANCE_DIGEST_ENABLED === 'true';
+}
+
 export default async () => {
+    // Gate FIRST: no GAS, OpenAI or other outbound call happens while disabled.
+    if (!complianceDigestEnabled()) {
+        return new Response('compliance-digest is disabled', {
+            status: 410,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+    }
+
     console.log('[compliance-digest] Generating daily digest...');
 
     try {
@@ -72,11 +95,4 @@ Be concise and actionable. Use Slack formatting (bold, emoji, bullet points).`,
         console.error('[compliance-digest] Error:', err.message);
         return new Response('Error: ' + err.message, { status: 500 });
     }
-};
-
-// Netlify reads the schedule from this plain object. `Config` in
-// @netlify/functions is a TypeScript type only and is not exported at runtime,
-// so importing it from this .mjs file stops the module from loading.
-export const config = {
-    schedule: '0 13 * * *',
 };

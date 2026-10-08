@@ -2,6 +2,17 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — Compliance digest unscheduled
+
+### Changed
+
+- `compliance-digest.mjs` no longer runs on a schedule. It used to run daily at `0 13 * * *` (9:00 AM EDT / 8:00 AM EST). Its `export const config` held only `schedule`, so the export is removed, and Netlify will not run the function on a cron after this deploy. The handler is unchanged.
+  - Reason: GAS has no `get_compliance_report` action yet. Each run sent an "Unauthorized" error response to OpenAI and posted the resulting "digest" to Slack.
+  - `netlify.toml` has no schedule entry for it, and Netlify deploy settings are untouched.
+- `npm test` now checks that `compliance-digest` still loads and has a handler. It fails if the function exports a schedule or if `netlify.toml` schedules it.
+- `compliance-digest` is now **disabled by default**. Without a schedule it is an ordinary function anyone could call at `/.netlify/functions/compliance-digest`, which would trigger GAS, OpenAI and a Slack post on demand. The handler now returns `410` with a `disabled` body before any GAS, OpenAI or other outbound call, unless the Netlify env var `COMPLIANCE_DIGEST_ENABLED` is exactly `true`. That flag is not set in Netlify, so the function stays off. Netlify env and deploy settings are untouched.
+- `npm test` checks that a plain request with the flag unset (or set to anything other than `true`) returns `410 disabled` and makes zero outbound calls (fetch, http/https and OpenAI are all stubbed).
+
 ## 2026-10-08 — Compliance digest loads again
 
 ### Fixed

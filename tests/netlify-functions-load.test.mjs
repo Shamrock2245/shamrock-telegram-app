@@ -1,13 +1,25 @@
 import assert from 'node:assert/strict';
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 
 const FUNCTIONS_DIR = new URL('../netlify/functions/', import.meta.url);
 
-test('compliance-digest loads and keeps its daily schedule', async () => {
+test('compliance-digest loads, has a handler, and is NOT scheduled', async () => {
     const mod = await import(new URL('compliance-digest.mjs', FUNCTIONS_DIR));
     assert.equal(typeof mod.default, 'function');
-    assert.deepEqual(mod.config, { schedule: '0 13 * * *' });
+    assert.equal(mod.config?.schedule, undefined, 'compliance-digest must not export a schedule');
+});
+
+test('netlify.toml does not schedule compliance-digest', async () => {
+    const toml = readFileSync(new URL('../netlify.toml', import.meta.url), 'utf8');
+    const lines = toml.split('\n').map((l) => l.replace(/#.*/, '').trim()).filter(Boolean);
+    let section = '';
+    const scheduled = [];
+    for (const line of lines) {
+        if (line.startsWith('[')) section = line;
+        else if (/^schedule\s*=/.test(line)) scheduled.push(section);
+    }
+    assert.deepEqual(scheduled.filter((s) => s.includes('compliance-digest')), []);
 });
 
 test('every Netlify function module loads without a missing named export', async () => {
