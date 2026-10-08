@@ -8,7 +8,7 @@
     <script>(function () { var t = localStorage.getItem('shamrock-theme'); document.documentElement.setAttribute('data-theme', t || 'dark') })();</script>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css?v=35340b6526">
-    <link rel="stylesheet" href="styles.css?v=5508677b9c">
+    <link rel="stylesheet" href="styles.css?v=50231ede21">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -67,17 +67,30 @@
         <!-- STEP 2: CASE DASHBOARD -->
         <section class="step hidden" id="stepDashboard">
             <!-- Account badge -->
-            <div class="account-badge" id="accountBadge">
+            <div class="account-badge status-card" id="accountBadge">
                 <div class="account-avatar"><i class="ph ph-user-circle"></i></div>
                 <div class="account-info">
                     <span class="account-name" id="accountName"></span>
                     <span class="account-phone" id="accountPhone"></span>
                 </div>
-                <span class="account-status active">Active</span>
+                <span class="account-status active" id="accountStatus">Active</span>
+            </div>
+
+            <!-- Timeline: only fields telegram_status_lookup actually returns -->
+            <div class="dashboard-card status-card" id="statusTimelineCard">
+                <div class="card-header">
+                    <span class="card-icon"><i class="ph ph-path"></i></span>
+                    <h3>Case Timeline</h3>
+                </div>
+                <p class="sr-only" id="timelineStatus" aria-live="polite"></p>
+                <ol class="status-timeline" id="statusTimeline" aria-label="Case status timeline"></ol>
+                <div class="card-empty hidden" id="timelineEmpty">
+                    <p>No dated steps are on file yet.</p>
+                </div>
             </div>
 
             <!-- Court Dates -->
-            <div class="dashboard-card">
+            <div class="dashboard-card status-card">
                 <div class="card-header">
                     <span class="card-icon"><i class="ph ph-scales"></i></span>
                     <h3>Court Dates</h3>
@@ -102,7 +115,7 @@
             </div>
 
             <!-- Payment Schedule -->
-            <div class="dashboard-card">
+            <div class="dashboard-card status-card">
                 <div class="card-header">
                     <span class="card-icon"><i class="ph ph-money-wavy"></i></span>
                     <h3>Payment Schedule</h3>
@@ -125,13 +138,16 @@
                         <span class="info-value" id="lastPayment">—</span>
                     </div>
                 </div>
+                <div class="card-empty hidden" id="noPayment">
+                    <p>No payment schedule on file.</p>
+                </div>
                 <a href="../payment/" class="shamrock-btn shamrock-btn-outline full-width btn-sm" id="btnMakePayment">
                     <i class="ph ph-wallet"></i> Make a Payment
                 </a>
             </div>
 
             <!-- Case Summary -->
-            <div class="dashboard-card">
+            <div class="dashboard-card status-card">
                 <div class="card-header">
                     <span class="card-icon"><i class="ph ph-clipboard-text"></i></span>
                     <h3>Case Summary</h3>
@@ -154,8 +170,8 @@
                 </div>
             </div>
 
-            <!-- Documents -->
-            <div class="dashboard-card">
+            <!-- Documents: lookup does not return a packet. Kept as a card, not a timeline stage. -->
+            <div class="dashboard-card status-card">
                 <div class="card-header">
                     <span class="card-icon"><i class="ph ph-files"></i></span>
                     <h3>Documents</h3>
@@ -166,7 +182,7 @@
                     </div>
                 </div>
                 <div class="card-empty hidden" id="noDocs">
-                    <p>No documents on file yet.</p>
+                    <p>Document status isn’t part of case lookup. Call (239) 332-2245 and we’ll pull up your packet.</p>
                 </div>
             </div>
 
@@ -199,7 +215,7 @@
     </div>
 
     <script src="../shared/brand.js?v=b13405748d"></script>
-    <script src="app.js?v=13449b2dad"></script>
+    <script src="app.js?v=78995cfd66"></script>
 </body>
 
 </html>

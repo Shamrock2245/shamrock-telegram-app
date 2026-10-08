@@ -359,6 +359,153 @@
     font-size: 0.85rem;
 }
 
+/* Shared skeleton shimmer reads --surface. Define it here so the existing
+   .skeleton-loading rule in theme.css paints with the active theme. */
+#stepDashboard {
+    --surface: var(--bg-secondary);
+    --surface-alt: var(--border-color);
+}
+
+/* ── Case timeline ──
+   Colors come from theme tokens. Inside Telegram, themeParams
+   overwrite --bg-card, --text-*, --border-color, and --shamrock-emerald.
+   ── */
+.status-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-timeline[hidden] {
+    display: none;
+}
+
+.timeline-item {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    column-gap: 12px;
+    min-height: 44px;
+    position: relative;
+    padding: 4px 0 16px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 22px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+.timeline-marker {
+    width: 16px;
+    height: 16px;
+    margin-top: 4px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--text-secondary);
+    background: var(--bg-card);
+    justify-self: center;
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.timeline-done .timeline-marker {
+    background: var(--shamrock-emerald);
+    border-color: var(--shamrock-emerald);
+}
+
+.timeline-today .timeline-marker {
+    background: var(--tg-accent-text-color, var(--shamrock-gold));
+    border-color: var(--tg-accent-text-color, var(--shamrock-gold));
+}
+
+.timeline-upcoming .timeline-marker {
+    background: transparent;
+    border-color: var(--text-secondary);
+}
+
+.timeline-recorded .timeline-marker {
+    background: var(--bg-glass);
+    border-color: var(--text-secondary);
+}
+
+.timeline-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-bottom: 2px;
+}
+
+.timeline-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.timeline-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.timeline-state {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    padding: 4px 8px;
+    line-height: 1.2;
+}
+
+.timeline-when,
+.timeline-note {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.timeline-note {
+    font-size: 0.82rem;
+}
+
+.account-status.warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--shamrock-gold);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* ── Actions Bar ── */
 .actions-bar {
     display: flex;
