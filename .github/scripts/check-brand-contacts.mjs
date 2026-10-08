@@ -40,7 +40,8 @@ const BANNED_SNIPPETS = [
 ];
 
 const OPERATIONAL = new Map([
-  ['2399550301', 'desk cell dialed with the office landline in the Twilio voice handlers'],
+  ['2399550301', 'desk line parallel-rung with the office landline in the Twilio voice handlers'],
+  ['2399550314', 'desk line parallel-rung with the office landline in the Twilio voice handlers'],
   ['2399550305', 'Spanish line recorded in .agent notes'],
 ]);
 
@@ -249,6 +250,8 @@ function selfTest() {
     ['https://www.shamrockbail.biz', 'error'],
     ['admin@shamrockbailbonds.com', 'error'],
     ['239-955-0301', 'review'],
+    ['239-955-0314', 'review'],
+    ['+12399550314', 'review'],
     ['239-955-0305', 'review'],
     ['shamrockbailbonds1528@gmail.com', 'review'],
     ['12394771500', 'ok'],

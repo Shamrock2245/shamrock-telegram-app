@@ -4,16 +4,21 @@
  * ElevenLabs register-call cannot transfer (no Twilio credentials).
  * This updates the in-progress Programmable Voice call with Dial TwiML.
  *
- * Shannon "want a person" rings the landline and 0301 at the same time.
- * First staff member to answer wins. Never dial 727-295-2245.
- * Spoken office number is the landline (239) 332-2245.
+ * Any live-person transfer parallel-rings the four office lines; first answer wins.
+ * +12393322245, +12399550301, +12399550178, +12399550314.
+ * Never dial +17272952245. Spoken office number stays 239-332-2245.
  * URL: https://shamrock-telegram.netlify.app/api/twilio-transfer-office
  */
 
-const TWILIO_NUMBER = '+17272952245';
-const LANDLINE = '+12393322245';
-const DESK_CELL = '+12399550301';
-const OFFICE_RING_SECONDS = 25;
+import {
+    OFFICE_RING_SECONDS,
+    OFFICE_RING_TARGETS,
+    SHANNON_LINE,
+    isOfficeRingTarget,
+    officeRingNumbersXml,
+} from '../../shared/office-ring-targets.js';
+
+const TWILIO_NUMBER = SHANNON_LINE;
 
 function digitsOnly(value) {
     return String(value || '').replace(/\D/g, '');
@@ -28,12 +33,8 @@ function toE164(value) {
     return '';
 }
 
-function isHumanDesk(value) {
-    const d = digitsOnly(value);
-    return (
-        d === '12399550301' || d.endsWith('2399550301') ||
-        d === '12393322245' || d.endsWith('2393322245')
-    );
+export function isHumanDesk(value) {
+    return isOfficeRingTarget(value);
 }
 
 function isShannonLine(value) {
@@ -45,14 +46,18 @@ function isCallSid(value) {
     return /^CA[0-9a-f]{32}$/i.test(String(value || '').trim());
 }
 
-function officeDialTwiml() {
+function displayNumber(e164) {
+    const digits = digitsOnly(e164).slice(-10);
+    return digits.slice(0, 3) + '-' + digits.slice(3, 6) + '-' + digits.slice(6);
+}
+
+export function officeDialTwiml() {
     return (
         '<?xml version="1.0" encoding="UTF-8"?>' +
         '<Response>' +
         '<Say>Please hold while I connect you to our office.</Say>' +
         `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${TWILIO_NUMBER}" answerOnBridge="true">` +
-        `<Number>${LANDLINE}</Number>` +
-        `<Number>${DESK_CELL}</Number>` +
+        officeRingNumbersXml() +
         '</Dial>' +
         '<Say>The office did not answer. Please call two three nine, three three two, two two four five.</Say>' +
         '</Response>'
@@ -139,8 +144,11 @@ async function findInProgressSid(callerPhone) {
 
 async function redirectCall(callSid) {
     const twiml = officeDialTwiml();
-    if (twiml.indexOf(LANDLINE) === -1) throw new Error('twiml_missing_landline');
-    if (twiml.indexOf(DESK_CELL) === -1) throw new Error('twiml_missing_desk_cell');
+    const numbers = [...twiml.matchAll(/<Number>([^<]*)<\/Number>/g)].map((match) => match[1]);
+    if (numbers.length !== OFFICE_RING_TARGETS.length) throw new Error('twiml_ring_count');
+    if (numbers.some((number, index) => number !== OFFICE_RING_TARGETS[index])) {
+        throw new Error('twiml_ring_mismatch');
+    }
     if ((twiml.match(/<Dial /g) || []).length !== 1) throw new Error('twiml_not_simultaneous');
     if (/<Number>\+17272952245<\/Number>/.test(twiml)) throw new Error('twiml_dials_shannon');
     return twilioForm('/Calls/' + callSid + '.json', 'POST', { Twiml: twiml });
@@ -212,7 +220,7 @@ export default async (request) => {
             success: true,
             status: 'connecting',
             office: '239-332-2245',
-            also_ringing: '239-955-0301',
+            also_ringing: OFFICE_RING_TARGETS.slice(1).map(displayNumber).join(', '),
             result: 'Connecting you to the office at 239-332-2245 now. Please stay on the line.',
         });
     } catch (err) {
