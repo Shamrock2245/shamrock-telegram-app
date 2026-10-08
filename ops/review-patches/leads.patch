@@ -1,0 +1,159 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cde6809..9de790e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -3,6 +3,11 @@
+ All notable changes to this project are documented here.
+ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+ 
++## [Unreleased] — 2026-10-08 (Intake upsert keeps lifecycle fields)
++
++### Fixed
++- Repeat `POST /api/intake/submit` still updates identity fields. `status`, `created_at`, match fields, `paperwork_packet_id`, `paperwork_status`, `surety_id`, and `surety_unrecognized` are written with `$setOnInsert`, so a second save cannot revert a promoted or linked intake. The same split is used by the Wix webhook normalizer.
++
+ ## [Unreleased] — 2026-10-07 (Telegram and Shannon intake tags)
+ 
+ ### Added
+diff --git a/dashboard/routers/intake.py b/dashboard/routers/intake.py
+index 589061d..e6fc299 100644
+--- a/dashboard/routers/intake.py
++++ b/dashboard/routers/intake.py
+@@ -262,6 +262,36 @@ def _extract_defendant(data: dict, apply_defaults: bool = True) -> dict:
+     }
+ 
+ 
++# A later submit still refreshes identity. These fields are written only when
++# the intake is first inserted, so a repeat save cannot revert a promoted,
++# matched, or linked row back to a fresh pending intake.
++_INTAKE_INSERT_ONLY_FIELDS = frozenset({
++    "status",
++    "created_at",
++    "matched_booking_number",
++    "matched_county",
++    "matched_defendant_id",
++    "match_confidence",
++    "match_strategy",
++    "match_timestamp",
++    "surety_id",
++    "surety_unrecognized",
++    "paperwork_packet_id",
++    "paperwork_status",
++})
++
++
++def _intake_upsert_update(doc: dict) -> dict:
++    updates = {}
++    insert_only = {}
++    for key, value in doc.items():
++        if key in _INTAKE_INSERT_ONLY_FIELDS:
++            insert_only[key] = value
++        else:
++            updates[key] = value
++    return {"$set": updates, "$setOnInsert": insert_only}
++
++
+ async def _normalize_intake(
+     data: dict,
+     source: str = "wix_webhook",
+@@ -364,7 +394,7 @@ async def _normalize_intake(
+     intake_queue = get_collection("intake_queue")
+     await intake_queue.update_one(
+         {"intake_id": intake_id},
+-        {"$set": doc},
++        _intake_upsert_update(doc),
+         upsert=True,
+     )
+     return intake_id, doc
+@@ -540,10 +570,11 @@ async def intake_submit(request: Request):
+ 
+     intake_queue = get_collection("intake_queue")
+     try:
+-        # Upsert by intake_id to prevent duplicates
++        # Upsert by intake_id. Lifecycle fields are insert-only so a repeat
++        # save cannot revert a promoted, matched, or linked intake.
+         await intake_queue.update_one(
+             {"intake_id": intake_id},
+-            {"$set": doc},
++            _intake_upsert_update(doc),
+             upsert=True,
+         )
+         logger.info("[intake] New intake stored: %s | source=%s", intake_id, source)
+diff --git a/tests/test_intake_shannon.py b/tests/test_intake_shannon.py
+index 753c342..5282a5a 100644
+--- a/tests/test_intake_shannon.py
++++ b/tests/test_intake_shannon.py
+@@ -59,3 +59,74 @@ def test_shannon_intake_submit_skips_matching(monkeypatch):
+     sched.assert_called_once()
+     saved = col.update_one.await_args.args[1]["$set"]
+     assert saved["indemnitor_name"] == "Brendan O'Neal"
++
++
++def test_repeat_intake_submit_does_not_regress_lifecycle_fields(monkeypatch):
++    from dashboard.routers import intake as intake_mod
++
++    col = MagicMock()
++    col.update_one = AsyncMock()
++    monkeypatch.setattr(intake_mod, "get_collection", lambda name: col)
++
++    class Req:
++        headers = {}
++
++        async def json(self):
++            return {
++                "source": "shannon_voice",
++                "intakeId": "SH-2395550101-JANE-DOE",
++                "defendantName": "Jane Doe",
++                "indemnitorName": "Brendan O'Neal",
++                "indemnitorPhone": "2395550101",
++            }
++
++    with patch("dashboard.services.intake_fanout.schedule_after_save"):
++        result = asyncio.run(intake_mod.intake_submit(Req()))
++
++    assert result["success"] is True
++    update = col.update_one.await_args.args[1]
++    saved = update["$set"]
++    inserted = update["$setOnInsert"]
++    assert saved["indemnitor_name"] == "Brendan O'Neal"
++    assert saved["indemnitor_phone"] == "2395550101"
++    preserved = (
++        "status",
++        "created_at",
++        "matched_booking_number",
++        "matched_county",
++        "matched_defendant_id",
++        "match_confidence",
++        "match_strategy",
++        "match_timestamp",
++        "surety_id",
++        "surety_unrecognized",
++        "paperwork_packet_id",
++        "paperwork_status",
++    )
++    for key in preserved:
++        assert key not in saved, key
++        assert key in inserted, key
++    assert inserted["status"] == "pending"
++    assert inserted["surety_id"] is None
++    assert inserted["paperwork_packet_id"] is None
++    overlap = set(saved) & set(inserted)
++    assert overlap == set()
++
++
++def test_normalize_intake_preserves_lifecycle_fields(monkeypatch):
++    from dashboard.routers import intake as intake_mod
++
++    col = MagicMock()
++    col.update_one = AsyncMock()
++    monkeypatch.setattr(intake_mod, "get_collection", lambda name: col)
++    asyncio.run(intake_mod._normalize_intake(
++        {"intakeId": "WX-1", "indemnitorName": "Amy Roe"},
++        source="wix_webhook",
++    ))
++    update = col.update_one.await_args.args[1]
++    assert update["$set"]["indemnitor_name"] == "Amy Roe"
++    assert "status" not in update["$set"]
++    assert "created_at" not in update["$set"]
++    assert update["$setOnInsert"]["status"] == "pending"
++    assert "paperwork_packet_id" in update["$setOnInsert"]
++    assert "surety_id" in update["$setOnInsert"]
