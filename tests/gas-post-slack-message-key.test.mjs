@@ -72,3 +72,31 @@ test('checkin-geo-alert posts post_slack_message with the GAS API key from env',
         globalThis.fetch = realFetch;
     }
 });
+
+test('compliance-digest (flag COMPLIANCE_DIGEST_ENABLED=true) posts with the GAS API key; all calls mocked', async () => {
+    const { default: OpenAI } = await import('openai');
+    process.env.GAS_WEB_APP_URL = 'https://gas.test/exec';
+    process.env.GAS_API_KEY = 'test-gas-key';
+    process.env.COMPLIANCE_DIGEST_ENABLED = 'true';
+    const sent = [];
+    const realFetch = globalThis.fetch;
+    const realCreate = OpenAI.Chat.Completions.prototype.create;
+    globalThis.fetch = async (url, init) => {
+        sent.push({ url: String(url), body: JSON.parse(init.body) });
+        return new Response(JSON.stringify({ success: true, missed: [] }), { status: 200 });
+    };
+    OpenAI.Chat.Completions.prototype.create = async () => ({ choices: [{ message: { content: 'TEST DIGEST' } }] });
+    try {
+        const { default: handler } = await import(new URL('functions/compliance-digest.mjs', ROOT));
+        const res = await handler(new Request('https://example.test/.netlify/functions/compliance-digest'));
+        assert.equal(res.status, 200);
+        assert.equal(sent.length, 2);
+        assert.equal(sent[1].body.action, 'post_slack_message');
+        assert.equal(sent[1].body.apiKey, 'test-gas-key');
+        assert.ok(!(await res.text()).includes('test-gas-key'), 'key never returned to the caller');
+    } finally {
+        globalThis.fetch = realFetch;
+        OpenAI.Chat.Completions.prototype.create = realCreate;
+        delete process.env.COMPLIANCE_DIGEST_ENABLED;
+    }
+});
