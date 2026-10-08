@@ -2,9 +2,18 @@
  * Check-In Geo Alert — POST Endpoint
  * POST /api/checkin-geo-alert
  *
- * Called by GAS after a defendant check-in. Compares check-in GPS
- * coordinates against the defendant's home county to detect
+ * Compares check-in GPS coordinates against the defendant's home county to detect
  * abnormal movement (>50 miles from home).
+ *
+ * AUTH (required; checked before any outbound call). Either:
+ *   - Server callers: header `X-GAS-API-Key` equal to the Netlify env var GAS_API_KEY
+ *     (the same shared secret GAS holds as its GAS_API_KEY Script Property), or
+ *   - Telegram mini-app: body.initData (Telegram.WebApp.initData) whose HMAC-SHA256 verifies
+ *     against the Netlify env var TELEGRAM_BOT_TOKEN, with a fresh auth_date.
+ * Anything else gets 401 and no Slack post. Without auth, anyone could push fake
+ * geo-fence alerts into #alerts.
+ * As of 2026-10-08 no repo calls this endpoint (the old comment said GAS did, but GAS has no
+ * such call), so requiring auth breaks no live caller.
  *
  * Body: {
  *   caseNumber: string,
@@ -20,7 +29,26 @@
  * If distance > 50 miles, posts a Slack alert and returns alert: true.
  * No AI needed — pure Haversine math.
  */
+import { timingSafeEqual } from 'node:crypto';
 import { GAS_ENDPOINT, gasApiKey, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { validateTelegramInitData } from './shared/telegram-init-data.mjs';
+
+// Server callers: X-GAS-API-Key must equal GAS_API_KEY. Fails closed when the env var is unset.
+function hasServerKey(req) {
+    const expected = gasApiKey();
+    const given = String(req.headers.get('x-gas-api-key') || '').trim();
+    if (!expected || !given) return false;
+    const a = Buffer.from(given, 'utf8');
+    const b = Buffer.from(expected, 'utf8');
+    return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function authorizeGeoAlert(req, body) {
+    if (hasServerKey(req)) return { ok: true, via: 'server_key' };
+    const tg = validateTelegramInitData(body && body.initData, process.env.TELEGRAM_BOT_TOKEN);
+    if (tg.ok) return { ok: true, via: 'telegram_init_data', userId: tg.userId };
+    return { ok: false };
+}
 
 // County center coordinates (approximate centers of each served county)
 const COUNTY_CENTERS = {
@@ -57,6 +85,10 @@ export default async (req) => {
     if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
     const body = await parseBody(req);
+    // Auth before anything else: no Slack post, GAS call or other fetch without it.
+    if (!authorizeGeoAlert(req, body).ok) {
+        return errorResponse('Unauthorized', 401);
+    }
     if (!body?.latitude || !body?.longitude) {
         return errorResponse('Missing latitude/longitude', 400);
     }

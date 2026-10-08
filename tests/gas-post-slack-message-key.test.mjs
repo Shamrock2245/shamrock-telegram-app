@@ -57,7 +57,8 @@ test('checkin-geo-alert posts post_slack_message with the GAS API key from env',
         // Jacksonville check-in, home county Lee: well over the 50-mile threshold.
         const req = new Request('https://example.test/api/checkin-geo-alert', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            // checkin-geo-alert requires caller auth: the server shared-secret header.
+            headers: { 'Content-Type': 'application/json', 'X-GAS-API-Key': 'test-gas-key' },
             body: JSON.stringify({ latitude: 30.3322, longitude: -81.6557, homeCounty: 'lee', caseNumber: 'TEST-1', defendantName: 'Test Person' }),
         });
         const res = await handler(req);
