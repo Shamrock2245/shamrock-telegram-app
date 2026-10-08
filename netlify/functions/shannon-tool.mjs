@@ -7,9 +7,9 @@
  * no GAS handler and return "Unknown tool".
  *
  * Env (names only):
- *   SHANNON_TOOL_SECRET   — Bearer token ElevenLabs sends (required; fail closed)
- *   ELEVENLABS_TOOL_SECRET — added as ?secret= when forwarding to GAS (required)
- *   GAS_WEB_APP_URL         — GAS /exec URL (canonical; GAS_ENDPOINT is the legacy alias)
+ *   SHANNON_TOOL_SECRET    — Bearer token ElevenLabs sends (required; fail closed)
+ *   ELEVENLABS_TOOL_SECRET — if set, added as ?secret= when forwarding to GAS (optional)
+ *   GAS_WEB_APP_URL          — GAS /exec URL (canonical; GAS_ENDPOINT is the legacy alias)
  *
  * Why SHANNON_TOOL_SECRET (new) instead of SEND_PAPERWORK_SECRET:
  *   notify-bondsman / send-paperwork share SEND_PAPERWORK_SECRET. This relay is a
@@ -65,11 +65,13 @@ export function createShannonToolHandler({ fetchImpl = fetch } = {}) {
             return json({ success: false, error: 'unauthorized' }, 401);
         }
 
-        const toolSecret = String(process.env.ELEVENLABS_TOOL_SECRET || '').trim();
-        if (!toolSecret || GAS_ENDPOINT === 'MISSING_GAS_WEB_APP_URL') {
-            console.error('[shannon-tool] ELEVENLABS_TOOL_SECRET or GAS_WEB_APP_URL not set');
+        if (GAS_ENDPOINT === 'MISSING_GAS_WEB_APP_URL') {
+            console.error('[shannon-tool] GAS_WEB_APP_URL not set');
             return json({ success: false, error: 'relay_misconfigured' }, 503);
         }
+        // Append ?secret= only when Netlify has ELEVENLABS_TOOL_SECRET. Unset is allowed:
+        // GAS may still be in activation mode, or Brendan may set the Script Property later.
+        const toolSecret = String(process.env.ELEVENLABS_TOOL_SECRET || '').trim();
 
         const url = new URL(req.url);
         const tool = String(url.searchParams.get('tool') || '').trim();
@@ -103,8 +105,8 @@ export function createShannonToolHandler({ fetchImpl = fetch } = {}) {
         const gasUrl = new URL(GAS_ENDPOINT);
         gasUrl.searchParams.set('source', 'elevenlabs_tool');
         gasUrl.searchParams.set('tool', tool);
-        gasUrl.searchParams.set('secret', toolSecret);
-        // Never log gasUrl: it carries the secret.
+        if (toolSecret) gasUrl.searchParams.set('secret', toolSecret);
+        // Never log gasUrl: it may carry the secret.
 
         let gasRes;
         try {

@@ -7,8 +7,24 @@ All notable changes to the Shamrock Telegram channel are recorded here.
 ### Security
 - New `POST /api/shannon-tool?tool=<name>` (`netlify/functions/shannon-tool.mjs`) relays the three Shannon tools that today hit GAS with no URL secret (`send_sms`, `schedule_callback`, `check_caller_history`).
 - Requires `Authorization: Bearer` matching env `SHANNON_TOOL_SECRET` (timing-safe). Unset → 503 (fail closed). Wrong/missing → 401. Non-allowlisted tools (including the dead `evaluate_flight_risk` / `run_background_verification`) → 400. Body over 64 KB → 413. All refusals make zero outbound fetches.
-- Forwards once to `GAS_WEB_APP_URL` as `?source=elevenlabs_tool&tool=<name>&secret=` from env `ELEVENLABS_TOOL_SECRET` (server-side; never logged). Unset → 503.
+- Forwards once to `GAS_WEB_APP_URL` as `?source=elevenlabs_tool&tool=<name>`. If Netlify env `ELEVENLABS_TOOL_SECRET` is set, appends `&secret=` server-side (never logged). If it is unset, forwards without `secret` (does not fail closed on that env).
 - ElevenLabs tool URL/config changes are **not** in this PR. Brendan points the three tools here later (see PR body).
+
+## 2026-10-08 — Mini App pages go through /api/miniapp (no more direct GAS calls)
+
+### Security
+
+- New `POST /api/miniapp` (`netlify/functions/miniapp-gas.mjs`) is now the only path from the Mini App pages to GAS. Every refusal happens before any outbound call. It works in four steps:
+  - It verifies Telegram `initData` (HMAC-SHA256 with `TELEGRAM_BOT_TOKEN`, fresh `auth_date`), using the shared verifier `crm-intake` and `checkin-geo-alert` already use.
+  - For lookups (`telegram_payment_lookup`, `telegram_status_lookup`, `telegram_document_lookup`) it also verifies the signed `Telegram.WebApp.requestContact` response. That response must belong to the same Telegram user. Only the phone Telegram verified is sent to GAS. A typed phone that differs, or a case-number lookup, gets `403`. GAS has no trustworthy Telegram-user-to-phone link today: its sheets store whatever phone the client typed, so they are not used for ownership.
+  - Write actions (`telegram_mini_app_intake`, `telegram_mini_app_upload`, `telegram_payment_log`, `telegram_checkin_log`, `telegram_client_update`) get the verified Telegram id and username in place of what the client claimed. Anonymous tips are forwarded without the id.
+  - It enforces a per-user limit (10 lookups or 30 writes per 10 minutes), then forwards once to GAS with `apiKey` = `GAS_API_KEY`, server-side.
+- `intake`, `payment`, `updates`, `status`, `documents` and `defendant` now call `/api/miniapp` through `miniappPost` / `miniappLookup` in `shared/brand.js`. The GAS URL is removed from the pages.
+  - `defendant` had its GAS URL set to `null`, so its lookup, uploads, check-in and updates all failed. Its lookup now uses the verified-phone status lookup.
+  - Large photos are shrunk before upload so they fit the 6 MB function body limit.
+- `/api/status` (`status-proxy.mjs`) is retired and returns `410`. It was an unauthenticated proxy that returned client data for any phone, and no page called it.
+- `sw.js` cache bumped to `shamrock-v3` so cached pages that still call GAS directly are dropped.
+- This change is safe live on its own: GAS still accepts these actions with or without the key until the portal GAS gate ships.
 
 ## 2026-10-08 — Caller auth on /api/checkin-geo-alert
 

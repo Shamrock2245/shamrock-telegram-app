@@ -14,9 +14,6 @@
 // ═══════════════════════════════════════════════════════════════
 
 const UPDATE_CONFIG = {
-    GAS_ENDPOINT: typeof SHAMROCK_GAS_ENDPOINT !== 'undefined'
-        ? SHAMROCK_GAS_ENDPOINT
-        : null,
     ACTION: 'telegram_client_update'
 };
 
@@ -225,9 +222,10 @@ async function submitUpdate(type) {
 
     // 2. Fire telemetry and uploads in the background
     (async () => {
-        // Send to GAS — use text/plain to avoid CORS preflight
+        // Send through /api/miniapp (verifies Telegram initData; anonymous tips are
+        // forwarded to GAS without the Telegram user id)
         try {
-            await gasPost(UPDATE_CONFIG.GAS_ENDPOINT, {
+            await miniappPost({
                 action: UPDATE_CONFIG.ACTION,
                 referenceId: state.referenceId,
                 updateType: type,
@@ -235,8 +233,6 @@ async function submitUpdate(type) {
                 name: state.isAnonymous ? 'ANONYMOUS' : state.name,
                 phone: state.isAnonymous ? '' : state.phone.replace(/\D/g, ''),
                 formData: formData,
-                telegramUserId: state.isAnonymous ? '' : (tgUser?.id?.toString() || ''),
-                telegramUsername: state.isAnonymous ? '' : (tgUser?.username || ''),
                 source: 'telegram_mini_app',
                 timestamp: new Date().toISOString()
             });
