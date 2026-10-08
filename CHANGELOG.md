@@ -9,6 +9,14 @@ All notable changes to the Shamrock Telegram channel are recorded here.
 - The ownership check still runs first: initData, the Telegram-signed contact for the same user, and a typed phone must match the verified one (403/401 otherwise).
 - `shared/brand.js` shows the same message on the documents page.
 
+## 2026-10-08 — Shannon mid-call tool relay (/api/shannon-tool)
+
+### Security
+- New `POST /api/shannon-tool?tool=<name>` (`netlify/functions/shannon-tool.mjs`) relays the three Shannon tools that today hit GAS with no URL secret (`send_sms`, `schedule_callback`, `check_caller_history`).
+- Requires `Authorization: Bearer` matching env `SHANNON_TOOL_SECRET` (timing-safe). Unset → 503 (fail closed). Wrong/missing → 401. Non-allowlisted tools (including the dead `evaluate_flight_risk` / `run_background_verification`) → 400. Body over 64 KB → 413. All refusals make zero outbound fetches.
+- Forwards once to `GAS_WEB_APP_URL` as `?source=elevenlabs_tool&tool=<name>`. If Netlify env `ELEVENLABS_TOOL_SECRET` is set, appends `&secret=` server-side (never logged). If it is unset, forwards without `secret` (does not fail closed on that env).
+- ElevenLabs tool URL/config changes are **not** in this PR. Brendan points the three tools here later (see PR body).
+
 ## 2026-10-08 — Mini App pages go through /api/miniapp (no more direct GAS calls)
 
 ### Security
