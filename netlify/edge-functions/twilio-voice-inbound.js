@@ -2,15 +2,24 @@
  * twilio-voice-inbound.js — Smart Call Router (Edge Function)
  *
  *   • (727) 295-2245 — Shannon when SHANNON_LIVE=true
- *   • Human office / jail whitelist — ring 239-332-2245 and 239-955-0301 together
+ *   • Human office / jail whitelist — parallel-ring the four office lines; first answer wins
  *   • Shannon "want a person" live transfer is twilio-transfer-office.js
- *   • SHANNON_LIVE=false → 727 rings both office lines; Shannon if nobody answers
+ *   • SHANNON_LIVE=false → 727 rings the four office lines; Shannon if nobody answers
  *
- * Never dial 727-295-2245 from this webhook (that is Shannon's own number).
+ * Ring targets: +12393322245, +12399550301, +12399550178, +12399550314.
+ * Never dial +17272952245 from this webhook (that is Shannon's own number).
  * 239-332-2245 must not call-forward back to 727.
  *
  * URL: https://shamrock-telegram.netlify.app/api/twilio-voice
  */
+
+import {
+    OFFICE_RING_SECONDS,
+    OFFICE_RING_TARGETS,
+    SHANNON_LINE,
+    isOfficeRingTarget,
+    officeRingNumbersXml,
+} from './office-ring-targets.js';
 
 const EXACT_WHITELIST = new Set([
     '12394771500',
@@ -33,10 +42,7 @@ const PREFIX_WHITELIST = [
     '1239477',
 ];
 
-const TWILIO_NUMBER = '+17272952245';
-const LANDLINE = '+12393322245';
-const DESK_CELL = '+12399550301';
-const OFFICE_RING_SECONDS = 25;
+const TWILIO_NUMBER = SHANNON_LINE;
 
 const XML_HEADERS = {
     'Content-Type': 'application/xml',
@@ -71,12 +77,8 @@ function digitsOnly(value) {
     return String(value || '').replace(/\D/g, '');
 }
 
-function isOfficeLine(digits) {
-    const d = digitsOnly(digits);
-    return (
-        d === '12393322245' || d.endsWith('2393322245') ||
-        d === '12399550301' || d.endsWith('2399550301')
-    );
+export function isOfficeLine(digits) {
+    return isOfficeRingTarget(digits);
 }
 
 function dialCallerId(_callerDigits) {
@@ -84,12 +86,11 @@ function dialCallerId(_callerDigits) {
     return TWILIO_NUMBER;
 }
 
-function buildDialTwiML(callerDigits) {
+export function buildDialTwiML(callerDigits) {
     let twiml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
     if (!isOfficeLine(callerDigits)) {
         twiml += `<Dial timeout="${OFFICE_RING_SECONDS}" callerId="${dialCallerId(callerDigits)}" answerOnBridge="true">`;
-        twiml += `<Number>${LANDLINE}</Number>`;
-        twiml += `<Number>${DESK_CELL}</Number>`;
+        twiml += officeRingNumbersXml();
         twiml += '</Dial>';
     }
     twiml += '<Say>Please hold while we connect you to our answering service.</Say>';
@@ -225,12 +226,12 @@ export default async (request, context) => {
     const shannonFront = (Deno.env.get('SHANNON_LIVE') || 'true').toLowerCase() !== 'false';
 
     if (!forceAI && isWhitelisted(digits)) {
-        console.log(`✅ WHITELISTED — routing to ${LANDLINE} and ${DESK_CELL}`);
+        console.log(`✅ WHITELISTED — routing to ${OFFICE_RING_TARGETS.join(', ')}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
     if (!forceAI && !shannonFront) {
-        console.log(`☎️ FORWARD — ${TWILIO_NUMBER} → ${LANDLINE} + ${DESK_CELL}`);
+        console.log(`☎️ FORWARD — ${TWILIO_NUMBER} → ${OFFICE_RING_TARGETS.join(' + ')}`);
         return new Response(buildDialTwiML(digits), { status: 200, headers: XML_HEADERS });
     }
 
