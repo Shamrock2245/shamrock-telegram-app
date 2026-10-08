@@ -277,19 +277,22 @@ function handleFileSelect(e, key, previewId, uploadId) {
     uploadedFiles[key] = file;
     var preview = document.getElementById(previewId);
     var upload = document.getElementById(uploadId);
+    var alt = key === 'idBack' ? 'Back of ID preview' : 'Front of ID preview';
     if (file.type.startsWith('image/')) {
         var reader = new FileReader();
         reader.onload = function (ev) {
-            preview.innerHTML = '<img src="' + ev.target.result + '" alt="Preview">';
+            preview.innerHTML = '<img src="' + ev.target.result + '" alt="' + alt + '">';
             preview.classList.remove('hidden');
+            upload.classList.add('has-preview');
         };
         reader.readAsDataURL(file);
     } else {
         preview.innerHTML = '<p style="color: var(--green-light);">📄 ' + file.name + '</p>';
         preview.classList.remove('hidden');
+        upload.classList.add('has-preview');
     }
     upload.classList.add('has-file');
-    if (tg) tg.HapticFeedback.impactOccurred('light');
+    if (window.shamrockPaintIdScan) window.shamrockPaintIdScan(upload, file);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
