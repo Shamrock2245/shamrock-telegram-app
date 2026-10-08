@@ -9,8 +9,28 @@
  */
 
 import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { buildCrmIntakeBody, submitCrmIntake } from './shared/crm-intake.mjs';
 
 const SHARED_SECRET = process.env.SEND_PAPERWORK_SECRET || null;
+
+function looksLikeCallSid(ref) {
+    const value = String(ref || '').trim();
+    return /^(CA|SM|MM|NO|PN)[0-9a-f]{32}$/i.test(value) || /^(conv_|tlcal_)/i.test(value);
+}
+
+function notifyCaseReference(body, data) {
+    const params = (body && body.parameters) || {};
+    const given = String(
+        (body && (body.case_reference || body.packet_id))
+        || params.case_reference
+        || params.packet_id
+        || ''
+    ).trim();
+    if (given && !looksLikeCallSid(given)) return given;
+    const phone = String((data && data.caller_phone) || '').replace(/\D/g, '').slice(-10);
+    const defName = String((data && data.defendant_name) || '').trim().toUpperCase().replace(/\s+/g, '-').slice(0, 24);
+    return 'SH-' + (phone || 'UNK') + '-' + (defName || Date.now().toString(36).toUpperCase());
+}
 
 export default async (req, context) => {
     // CORS
@@ -59,13 +79,16 @@ export default async (req, context) => {
 
         console.log('[notify-bondsman] Received notification request.');
 
+        const params = body.parameters || {};
         const data = {
-            caller_name: body.caller_name || body.parameters?.caller_name || '',
-            caller_phone: body.caller_phone || body.parameters?.caller_phone || '',
-            defendant_name: body.defendant_name || body.parameters?.defendant_name || '',
-            county: body.county || body.parameters?.county || '',
-            notes: body.notes || body.parameters?.notes || ''
+            caller_name: body.caller_name || params.caller_name || '',
+            caller_phone: body.caller_phone || params.caller_phone || '',
+            defendant_name: body.defendant_name || params.defendant_name || '',
+            county: body.county || params.county || '',
+            notes: body.notes || params.notes || '',
+            preferred_time: body.preferred_time || params.preferred_time || 'ASAP',
         };
+        data.case_reference = notifyCaseReference(body, data);
 
         if (!data.caller_name || !data.caller_phone) {
             return new Response(JSON.stringify({
@@ -77,7 +100,14 @@ export default async (req, context) => {
             });
         }
 
-        // Forward to GAS
+        const crmBody = buildCrmIntakeBody('shannon_voice', { said: data, intakeId: data.case_reference });
+        const crm = await submitCrmIntake(crmBody);
+        if (!crm.ok) {
+            console.error('[notify-bondsman] CRM intake failed; still forwarding the callback to GAS error=' + crm.error);
+        }
+
+        // GAS always runs the callback scheduler and the staff-desk text.
+        // A CRM success only skips the Slack post on that side.
         const gasUrl = new URL(GAS_ENDPOINT);
         gasUrl.searchParams.set('source', 'notify_bondsman');
         gasUrl.searchParams.set('data', encodeURIComponent(JSON.stringify(data)));
@@ -90,7 +120,8 @@ export default async (req, context) => {
         console.log('[notify-bondsman] Forwarding to GAS...');
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000); // 15s — this is fast
+        // CRM submit is capped at 4s. Keep this well under the 10s function limit.
+        const timeout = setTimeout(() => controller.abort(), 5000);
 
         const gasResponse = await fetch(gasUrl.toString(), {
             method: 'GET',
@@ -110,6 +141,19 @@ export default async (req, context) => {
                 success: true,
                 message: "I've passed your information to our bondsman. They'll call you back shortly."
             };
+        }
+
+        if (crm.ok) {
+            return new Response(JSON.stringify({
+                success: true,
+                via: 'crm',
+                intake_id: crm.intake_id || data.case_reference,
+                case_reference: data.case_reference,
+                message: "I've passed your information to our bondsman. They'll call you back shortly."
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
         }
 
         return new Response(JSON.stringify(gasResult), {

@@ -365,17 +365,20 @@ function submitForm() {
     var gv = function (id) { return (document.getElementById(id) && document.getElementById(id).value && document.getElementById(id).value.trim()) || ''; };
     var facility = gv('defFacility') === 'other' ? gv('defFacilityOther') : gv('defFacility');
 
+    var intakeId = 'TG-' + Date.now().toString(36).toUpperCase();
+    var bondAmount = gv('defBondAmount');
     var intakeData = {
         action: 'telegram_mini_app_intake',
         initData: tgInitData,
+        intakeId: intakeId,
         telegramUserId: tgUser ? String(tgUser.id) : '',
         telegramUsername: tgUser ? (tgUser.username || '') : '',
         DefFirstName: gv('defFirstName'), DefLastName: gv('defLastName'),
-        DefName: gv('defFirstName') + ' ' + gv('defLastName'),
+        DefName: (gv('defFirstName') + ' ' + gv('defLastName')).trim(),
         DefDOB: gv('defDOB'), DefFacility: facility,
-        DefCharges: gv('defCharges'), DefBondAmount: gv('defBondAmount'),
+        DefCharges: gv('defCharges'),
         IndFirstName: gv('indFirstName'), IndLastName: gv('indLastName'),
-        IndName: gv('indFirstName') + ' ' + gv('indLastName'),
+        IndName: (gv('indFirstName') + ' ' + gv('indLastName')).trim(),
         IndDOB: gv('indDOB'), IndRelation: gv('indRelation'),
         IndPhone: gv('indPhone'), IndEmail: gv('indEmail'),
         IndAddress: gv('indAddress'), IndEmployer: gv('indEmployer'), IndJobTitle: gv('indJobTitle'),
@@ -384,47 +387,120 @@ function submitForm() {
         gpsLatitude: locationData ? locationData.latitude : null,
         gpsLongitude: locationData ? locationData.longitude : null,
         manualLocation: locationData ? (locationData.manual || null) : null,
-        // Surety company routing — defaults to 'osi'; staff can override via dashboard before paperwork is sent
-        surety_id: gv('suretyId') || 'osi',
-        source: 'telegram_mini_app', platform: 'telegram',
+        source: 'telegram_miniapp', platform: 'telegram',
         timestamp: new Date().toISOString(),
         consent: true,
         consentGiven: true,
         consentTimestamp: new Date().toISOString()
     };
+    if (bondAmount) intakeData.DefBondAmount = bondAmount;
+    // GAS fallback keeps today's surety default. The CRM payload omits it.
+    var gasPayload = Object.assign({}, intakeData, {
+        action: 'telegram_mini_app_intake',
+        source: 'telegram_mini_app',
+        surety_id: gv('suretyId') || 'osi'
+    });
 
     // 1. Instantly show success screen to make the app feel incredibly fast
     clearFormSession('intake');
-    showSuccess();
+    showSuccess(intakeId);
 
-    // 2. Process data in the background
-    gasPost(SHAMROCK_GAS_ENDPOINT, intakeData)
-        .then(function (result) {
-            console.log('[intake] Submission result:', result);
-            // Upload files in parallel
-            var ups = [];
-            if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
-            if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
-            return Promise.all(ups);
-        })
-        .then(function () {
-            if (tg) {
-                try {
-                    tg.sendData(JSON.stringify({
-                        type: 'intake_submitted',
-                        defName: intakeData.DefName,
-                        indName: intakeData.IndName,
-                        facility: intakeData.DefFacility,
-                        timestamp: intakeData.timestamp
-                    }));
-                } catch (e) { }
-            }
-        })
-        .catch(function (error) {
-            console.error('[intake] Background submission error:', error);
-            // Since we already showed success, we might optionally alert the user or rely on staff
-            if (tg) tg.showAlert('Warning: Network error. We have saved your info securely, but if you don\'t hear back shortly, please tap "Call Us Now".');
+    function uploadIntakeIds() {
+        var ups = [];
+        if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
+        if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
+        return Promise.all(ups);
+    }
+
+    function notifyTelegram() {
+        if (!tg) return;
+        try {
+            tg.sendData(JSON.stringify({
+                type: 'intake_submitted',
+                defName: intakeData.DefName,
+                indName: intakeData.IndName,
+                facility: intakeData.DefFacility,
+                timestamp: intakeData.timestamp
+            }));
+        } catch (e) { }
+    }
+
+    function honestSaveFailure() {
+        if (tg) tg.showAlert('We could not save your application. Please tap "Call Us Now" so a bondsman can take it.');
+    }
+
+    function saveThroughGas() {
+        return gasPost(SHAMROCK_GAS_ENDPOINT, gasPayload).then(function (result) {
+            if (result) console.log('[intake] Submission result:', result);
+            return uploadIntakeIds().then(function () { notifyTelegram(); });
+        }).catch(function (err) {
+            var wrapped = err instanceof Error ? err : new Error(String(err || 'gas_failed'));
+            wrapped.gasAttempted = true;
+            throw wrapped;
         });
+    }
+
+    // 2. CRM first. The server does not call GAS. This page does, once.
+    readIdFrontBase64().then(function (idImage) {
+        var crmPayload = Object.assign({}, intakeData);
+        if (idImage) {
+            crmPayload.id_image_b64 = idImage.b64;
+            crmPayload.id_filename = idImage.name;
+        }
+        return fetch('/api/crm-intake', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(crmPayload)
+        }).then(function (resp) {
+            return resp.json().catch(function () { return {}; }).then(function (data) {
+                return { ok: resp.ok, data: data || {} };
+            });
+        });
+    }).then(function (out) {
+        return settleCrmResult((out && out.data) || {}, {
+            intakeId: intakeId,
+            uploadIntakeIds: uploadIntakeIds,
+            notifyTelegram: notifyTelegram,
+            saveThroughGas: saveThroughGas
+        });
+    }).catch(function (error) {
+        return recoverIntakeSave(error, {
+            honestSaveFailure: honestSaveFailure,
+            saveThroughGas: saveThroughGas
+        });
+    });
+}
+
+function intakeSavePlan(serverData) {
+    var data = serverData || {};
+    if (data.success) return 'saved';
+    return 'gas_fallback';
+}
+
+function settleCrmResult(serverData, actions) {
+    var data = serverData || {};
+    var plan = intakeSavePlan(data);
+    if (plan === 'saved') {
+        console.log('[intake] Submission result:', data.via, data.intake_id || actions.intakeId || '');
+        var uploaded = actions.uploadIntakeIds ? actions.uploadIntakeIds() : Promise.resolve();
+        return Promise.resolve(uploaded).then(function () {
+            if (actions.notifyTelegram) actions.notifyTelegram();
+        });
+    }
+    console.error('[intake] CRM intake failed; falling back to GAS', data.error);
+    return actions.saveThroughGas();
+}
+
+function recoverIntakeSave(error, actions) {
+    console.error('[intake] Background submission error:', error);
+    if (error && (error.leadUnsaved || error.gasAttempted)) {
+        actions.honestSaveFailure();
+        return Promise.resolve();
+    }
+    return actions.saveThroughGas().catch(function (gasError) {
+        console.error('[intake] GAS fallback failed:', gasError);
+        actions.honestSaveFailure();
+    });
 }
 
 function uploadFileToGAS(file, docType, telegramUserId) {
@@ -451,8 +527,27 @@ function uploadFileToGAS(file, docType, telegramUserId) {
 // SUCCESS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
-function showSuccess() {
-    document.getElementById('successRefId').textContent = 'TG-' + Date.now().toString(36).toUpperCase();
+function readIdFrontBase64() {
+    return new Promise(function (resolve) {
+        var file = uploadedFiles && uploadedFiles.idFront;
+        if (!file) return resolve(null);
+        try {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var raw = String(e.target.result || '');
+                var comma = raw.indexOf(',');
+                resolve({ b64: comma >= 0 ? raw.slice(comma + 1) : raw, name: file.name || 'id.jpg' });
+            };
+            reader.onerror = function () { resolve(null); };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            resolve(null);
+        }
+    });
+}
+
+function showSuccess(refId) {
+    document.getElementById('successRefId').textContent = refId || ('TG-' + Date.now().toString(36).toUpperCase());
     document.querySelector('.form-container').classList.add('hidden');
     document.querySelector('.form-footer').classList.add('hidden');
     document.querySelector('.progress-bar-container').classList.add('hidden');

@@ -2,6 +2,23 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — Mini-app intake auth and fallback
+
+### Changed
+
+- `POST /api/crm-intake` checks Telegram `initData` against `TELEGRAM_BOT_TOKEN` and refuses the request when that check fails. It also limits each Telegram user to 20 submits per 10 minutes.
+- The mini-app posts intake to `/api/crm-intake`, the path the function declares. A custom function path replaces the default `/.netlify/functions/` address.
+- When the CRM call fails, the function returns JSON `crm_failed` and does not call GAS. The mini-app then posts the lead once, including ID images, through the browser's GAS queue. The page says the application was not saved only when that browser save fails.
+- ID scan and CRM submit each abort after 3.5 seconds, so the two calls stay near 7 seconds and under Netlify's 10 second limit. Shannon's notify-bondsman tool still forwards the callback and staff alert to GAS after a CRM success, and it reuses the call's case reference.
+
+## 2026-10-07 — Canonical CRM intake
+
+### Changed
+
+- Telegram mini-app intake and Shannon's notify-bondsman tool now open a lead with `POST /api/intake/submit` on ShamrockLeads. Source tags are `telegram_miniapp` and `shannon_voice`.
+- An uploaded ID is scanned first. The stated name, address, phone, and best email then fill that scan. Blank bond amounts and generated booking keys are not sent.
+- The browser's GAS queue runs only when the CRM call fails, and that failure is logged. The Netlify function itself does not post to GAS.
+
 ## 2026-08-16 — Direct paperwork retirement and authoritative-path alignment
 
 ### Changed
