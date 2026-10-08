@@ -11,5 +11,8 @@
     },
     "devDependencies": {
         "@netlify/plugin-lighthouse": "^6.0.1"
+    },
+    "scripts": {
+        "test": "node --test tests/*.mjs"
     }
 }
