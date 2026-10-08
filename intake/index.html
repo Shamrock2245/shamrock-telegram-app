@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../shared/id-scan.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
@@ -247,37 +248,95 @@
                 <div class="step-header">
                     <span class="step-icon">📄</span>
                     <h2>Documents & Location</h2>
-                    <p class="step-description">Upload your ID and share your location for compliance.</p>
+                    <p class="step-description">Photograph any US driver's license, state ID, or passport, then share your location.</p>
                 </div>
 
                 <div class="form-group">
-                    <label>Photo ID (Front) <span class="optional" style="color:var(--muted);font-size:0.8em;">(optional
-                            — can provide later)</span></label>
-                    <div class="file-upload" id="idFrontUpload">
-                        <input type="file" id="idFront" name="idFront" accept="image/*" capture="environment">
-                        <div class="file-upload-content">
-                            <span class="upload-icon"><i class="ph ph-camera"></i></span>
-                            <span class="upload-text">Tap to take photo or upload</span>
-                            <span class="upload-hint">Driver's license, State ID, or Passport</span>
+                    <div class="id-scan is-idle" id="idFrontUpload" data-side="front">
+                        <div class="id-scan-top">
+                            <span class="id-scan-badge">Front</span>
+                            <span class="id-scan-flag">Optional</span>
+                            <span class="id-scan-status">Ready</span>
                         </div>
-                        <div class="file-preview hidden" id="idFrontPreview"></div>
+                        <button type="button" class="id-scan-finder" aria-label="Open the camera for the front of your ID" aria-describedby="idFrontHint">
+                            <span class="id-scan-card">
+                                <span class="id-scan-corner tl" aria-hidden="true"></span>
+                                <span class="id-scan-corner tr" aria-hidden="true"></span>
+                                <span class="id-scan-corner bl" aria-hidden="true"></span>
+                                <span class="id-scan-corner br" aria-hidden="true"></span>
+                                <span class="id-scan-ghost" aria-hidden="true">
+                                    <span class="id-scan-portrait"></span>
+                                    <span class="id-scan-lines"><span></span><span></span><span></span></span>
+                                </span>
+                                <span class="id-scan-frame-label">Front of ID</span>
+                                <span class="file-preview id-scan-shot hidden" id="idFrontPreview"></span>
+                            </span>
+                        </button>
+                        <p class="id-scan-hint" id="idFrontHint">Any US driver's license, state ID, or passport. Fill the frame with the photo, name, and expiration, and avoid glare.</p>
+                        <ul class="id-scan-tips">
+                            <li>Fill the frame</li>
+                            <li>Avoid glare</li>
+                            <li>Show all four corners</li>
+                        </ul>
+                        <div class="id-scan-actions">
+                            <label class="id-scan-btn id-scan-btn-primary">
+                                <input type="file" id="idFront" name="idFront" accept="image/*" capture="environment" aria-describedby="idFrontHint">
+                                <i class="ph ph-camera" aria-hidden="true"></i>
+                                <span class="id-scan-btn-label" data-idle="Take front photo" data-retake="Retake front photo">Take front photo</span>
+                            </label>
+                            <label class="id-scan-btn id-scan-btn-file">
+                                <input type="file" accept="image/*" data-relay="idFront" aria-label="Choose a front ID photo from files">
+                                <i class="ph ph-image" aria-hidden="true"></i>
+                                <span>Choose file</span>
+                            </label>
+                        </div>
+                        <p class="id-scan-feedback" id="idFrontFeedback" role="status"></p>
                     </div>
-                    <p style="text-align:center;margin-top:6px;">
-                        <a href="#" onclick="skipIdUpload(event)"
-                            style="color:var(--muted);font-size:0.85em;text-decoration:underline;">Skip — I'll provide
-                            my ID later</a>
+                    <p class="id-scan-skip">
+                        <a href="#" onclick="skipIdUpload(event)">Skip — I'll provide my ID later</a>
                     </p>
                 </div>
 
                 <div class="form-group">
-                    <label>Photo ID (Back)</label>
-                    <div class="file-upload" id="idBackUpload">
-                        <input type="file" id="idBack" name="idBack" accept="image/*" capture="environment">
-                        <div class="file-upload-content">
-                            <span class="upload-icon"><i class="ph ph-camera"></i></span>
-                            <span class="upload-text">Back of ID (optional)</span>
+                    <div class="id-scan is-idle" id="idBackUpload" data-side="back">
+                        <div class="id-scan-top">
+                            <span class="id-scan-badge">Back</span>
+                            <span class="id-scan-flag">Optional</span>
+                            <span class="id-scan-status">Ready</span>
                         </div>
-                        <div class="file-preview hidden" id="idBackPreview"></div>
+                        <button type="button" class="id-scan-finder" aria-label="Open the camera for the back of your ID" aria-describedby="idBackHint">
+                            <span class="id-scan-card">
+                                <span class="id-scan-corner tl" aria-hidden="true"></span>
+                                <span class="id-scan-corner tr" aria-hidden="true"></span>
+                                <span class="id-scan-corner bl" aria-hidden="true"></span>
+                                <span class="id-scan-corner br" aria-hidden="true"></span>
+                                <span class="id-scan-ghost" aria-hidden="true">
+                                    <span class="id-scan-barcode"></span>
+                                    <span class="id-scan-lines"><span></span><span></span><span></span></span>
+                                </span>
+                                <span class="id-scan-frame-label">Back of ID</span>
+                                <span class="file-preview id-scan-shot hidden" id="idBackPreview"></span>
+                            </span>
+                        </button>
+                        <p class="id-scan-hint" id="idBackHint">Flip the same card and keep the barcode inside the frame. A passport only needs the photo page, so the back can stay empty.</p>
+                        <ul class="id-scan-tips">
+                            <li>Barcode in frame</li>
+                            <li>Hold the card flat</li>
+                            <li>Passport: front only</li>
+                        </ul>
+                        <div class="id-scan-actions">
+                            <label class="id-scan-btn id-scan-btn-primary">
+                                <input type="file" id="idBack" name="idBack" accept="image/*" capture="environment" aria-describedby="idBackHint">
+                                <i class="ph ph-camera" aria-hidden="true"></i>
+                                <span class="id-scan-btn-label" data-idle="Take back photo" data-retake="Retake back photo">Take back photo</span>
+                            </label>
+                            <label class="id-scan-btn id-scan-btn-file">
+                                <input type="file" accept="image/*" data-relay="idBack" aria-label="Choose a back ID photo from files">
+                                <i class="ph ph-image" aria-hidden="true"></i>
+                                <span>Choose file</span>
+                            </label>
+                        </div>
+                        <p class="id-scan-feedback" id="idBackFeedback" role="status"></p>
                     </div>
                 </div>
 
@@ -386,6 +445,7 @@
     </div>
 
     <script src="../shared/brand.js"></script>
+    <script type="module" src="../shared/id-scan.js"></script>
     <script src="app.js"></script>
 </body>
 
