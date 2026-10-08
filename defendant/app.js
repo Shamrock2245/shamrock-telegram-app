@@ -83,18 +83,20 @@ function setupFilePreview(inputId, previewId, uploadId) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
+        const alt = inputId === 'idBack' ? 'Back of ID preview' : inputId === 'idFront' ? 'Front of ID preview' : 'Preview';
         reader.onload = (ev) => {
             const preview = document.getElementById(previewId);
+            const upload = uploadId ? document.getElementById(uploadId) : null;
             if (preview) {
-                preview.innerHTML = `<img src="${ev.target.result}" alt="Preview">`;
+                preview.innerHTML = `<img src="${ev.target.result}" alt="${alt}">`;
                 preview.classList.remove('hidden');
             }
-            if (uploadId) {
-                const upload = document.getElementById(uploadId);
-                if (upload) upload.querySelector('.file-upload-content')?.classList.add('hidden');
-            }
+            if (upload) upload.classList.add('has-preview');
         };
         reader.readAsDataURL(file);
+        if (uploadId && window.shamrockPaintIdScan) {
+            window.shamrockPaintIdScan(document.getElementById(uploadId), file);
+        }
     });
 }
 
