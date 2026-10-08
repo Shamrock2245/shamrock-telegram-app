@@ -101,11 +101,18 @@ function showStep(step) {
 
     document.getElementById('currentStep').textContent = step;
 
+    var nameEl = document.getElementById('stepName');
     document.querySelectorAll('.dot').forEach(function (dot) {
-        var dotStep = parseInt(dot.dataset.step);
+        var dotStep = parseInt(dot.dataset.step, 10);
         dot.classList.remove('active', 'completed');
-        if (dotStep === step) dot.classList.add('active');
-        else if (dotStep < step) dot.classList.add('completed');
+        if (dotStep === step) {
+            dot.classList.add('active');
+            dot.setAttribute('aria-current', 'step');
+            if (nameEl && dot.dataset.name) nameEl.textContent = dot.dataset.name;
+        } else {
+            dot.removeAttribute('aria-current');
+            if (dotStep < step) dot.classList.add('completed');
+        }
     });
 
     var progress = (step / totalSteps) * 100;
@@ -581,7 +588,7 @@ function initRealTimeValidation() {
 document.addEventListener('DOMContentLoaded', function () {
     // Init Telegram (brand.js handles basics; we add intake-specific prefill)
     initTelegram();
-    document.body.classList.add('tg-themed');
+    initTheme();
 
     // Pre-fill indemnitor name from Telegram user profile
     if (tgUser) {
