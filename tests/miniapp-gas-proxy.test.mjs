@@ -121,7 +121,7 @@ test('refusals: unknown action, GET, bad JSON, oversize upload, missing config â
 });
 
 test('valid lookup forwards once to GAS with the key and ONLY the verified phone', async () => {
-    for (const action of LOOKUP_ACTIONS) {
+    for (const action of LOOKUP_ACTIONS.filter((a) => a !== 'telegram_document_lookup')) {
         for (const phone of ['5550100001', '']) {
             const { res, out, calls } = await call({ ...LOOKUP, action, phone, name: 'Someone Else', extra: 'dropped' });
             assert.equal(res.status, 200, action);
@@ -139,6 +139,33 @@ test('valid lookup forwards once to GAS with the key and ONLY the verified phone
             assert.ok(!JSON.stringify(out).includes(FAKE_GAS_KEY));
         }
     }
+});
+
+test('telegram_document_lookup: ownership check still runs, then 503 with zero fetches', async () => {
+    for (const phone of ['5550100001', '']) {
+        const { res, out, calls } = await call({ ...LOOKUP, action: 'telegram_document_lookup', phone });
+        assert.equal(res.status, 503);
+        assert.equal(out.error, 'document_lookup_unavailable');
+        assert.match(out.message, /332-2245/);
+        assert.equal(calls.length, 0);
+    }
+});
+
+test('telegram_document_lookup: another user\'s phone or contact is refused first (403/401), zero fetches', async () => {
+    const a = await call({ ...LOOKUP, action: 'telegram_document_lookup', phone: OTHER_PHONE });
+    assert.equal(a.res.status, 403);
+    assert.equal(a.out.error, 'not_your_phone');
+    const b = await call({ ...LOOKUP, action: 'telegram_document_lookup', contact: contact({ userId: OTHER }) });
+    assert.equal(b.res.status, 403);
+    assert.equal(b.out.error, 'contact_user_mismatch');
+    const c = await call({ ...LOOKUP, action: 'telegram_document_lookup', contact: undefined });
+    assert.equal(c.res.status, 401);
+    assert.deepEqual([...a.calls, ...b.calls, ...c.calls], []);
+});
+
+test('brand.js maps document_lookup_unavailable to the call-us message', () => {
+    const src = readFileSync(new URL('../shared/brand.js', import.meta.url), 'utf8');
+    assert.match(src, /document_lookup_unavailable:[^\n]*332-2245/);
 });
 
 test('valid write actions forward once with the key; verified identity replaces client claims', async () => {

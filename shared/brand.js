@@ -136,7 +136,8 @@ async function miniappLookup(action, phone) {
             phone_not_verified: 'Please share your Telegram phone number and try again.',
             contact_user_mismatch: 'Please share your own Telegram phone number and try again.',
             unauthorized: 'Please reopen this page from the Shamrock Telegram bot and try again.',
-            rate_limited: 'Too many lookups. Please wait a few minutes and try again.'
+            rate_limited: 'Too many lookups. Please wait a few minutes and try again.',
+            document_lookup_unavailable: 'Document lookup is temporarily unavailable. Please call (239) 332-2245 and we will pull up your packet.'
         }[code];
         if (friendly) {
             const e2 = new Error(friendly);
