@@ -20,6 +20,7 @@ import {
     isOfficeRingTarget,
     officeRingNumbersXml,
 } from '../../shared/office-ring-targets.js';
+import { brendanAssistantFirstMessageOverride } from '../lib/brendan-assistant-greeting.js';
 
 const EXACT_WHITELIST = new Set([
     '12394771500',
@@ -50,20 +51,6 @@ const XML_HEADERS = {
 };
 
 const CANONICAL_VOICE_URL = 'https://shamrock-telegram.netlify.app/api/twilio-voice';
-
-const OPENING_TAILS = [
-    'How can I help today?',
-    'How can I help you today?',
-    'What can I do for you?',
-    'How can I help?',
-    "I'm here, how can I help?",
-    'What can I help you with?',
-];
-
-function shannonOpening() {
-    const tail = OPENING_TAILS[Math.floor(Math.random() * OPENING_TAILS.length)];
-    return 'Shamrock Bail Bonds! This is Brendan. ' + tail;
-}
 
 function isWhitelisted(digits) {
     if (EXACT_WHITELIST.has(digits)) return true;
@@ -102,6 +89,24 @@ export function buildDialTwiML(callerDigits) {
 
 function rejectTwiML() {
     return '<?xml version="1.0" encoding="UTF-8"?><Response><Reject/></Response>';
+}
+
+export function aiPathConversationInitiationClientData({ from, callSid, mem0 = {}, digits, greeting } = {}) {
+    const digitString = String(digits || '');
+    return {
+        dynamic_variables: {
+            caller_phone: from,
+            caller_id: from,
+            call_sid: callSid,
+            returning_client: mem0.returning_client || 'no',
+            known_defendant: mem0.known_defendant || '',
+            prior_notes: mem0.prior_notes || '',
+            is_jail_call: (digitString.startsWith('1239477') || isWhitelisted(digitString)) ? 'yes' : 'no',
+            jail_facility: digitString.startsWith('1239477') ? 'Lee County Jail (Press 0 to talk to inmate)' : '',
+        },
+        conversation_config_override: brendanAssistantFirstMessageOverride(greeting),
+        source_info: { source: 'twilio' },
+    };
 }
 
 async function lookupMem0Context(fromNumber) {
@@ -267,22 +272,12 @@ export default async (request, context) => {
                     from_number: from,
                     to_number: to || '+17272952245',
                     direction: 'inbound',
-                    conversation_initiation_client_data: {
-                        dynamic_variables: {
-                            caller_phone: from,
-                            caller_id: from,
-                            call_sid: callSid,
-                            returning_client: mem0.returning_client || 'no',
-                            known_defendant: mem0.known_defendant || '',
-                            prior_notes: mem0.prior_notes || '',
-                            is_jail_call: (digits.startsWith('1239477') || isWhitelisted(digits)) ? 'yes' : 'no',
-                            jail_facility: digits.startsWith('1239477') ? 'Lee County Jail (Press 0 to talk to inmate)' : '',
-                        },
-                        conversation_config_override: {
-                            agent: { first_message: shannonOpening() },
-                        },
-                        source_info: { source: 'twilio' },
-                    },
+                    conversation_initiation_client_data: aiPathConversationInitiationClientData({
+                        from,
+                        callSid,
+                        mem0,
+                        digits,
+                    }),
                 }),
                 signal: AbortSignal.timeout(12000),
             }

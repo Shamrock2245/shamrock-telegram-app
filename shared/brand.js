@@ -25,20 +25,168 @@ function initTelegram() {
 
 // ═══════════════════════════════════════════════════════════════
 // THEME MANAGEMENT
+// Inside Telegram, Telegram.WebApp.themeParams owns color scheme,
+// background, text, and button colors. Outside Telegram (empty
+// themeParams / no WebApp), the light/dark toggle is the fallback.
 // ═══════════════════════════════════════════════════════════════
 
+var TG_THEME_KEYS = [
+    ['bg_color', '--tg-bg-color'],
+    ['secondary_bg_color', '--tg-secondary-bg-color'],
+    ['text_color', '--tg-text-color'],
+    ['hint_color', '--tg-hint-color'],
+    ['link_color', '--tg-link-color'],
+    ['button_color', '--tg-button-color'],
+    ['button_text_color', '--tg-button-text-color'],
+    ['header_bg_color', '--tg-header-bg-color'],
+    ['accent_text_color', '--tg-accent-text-color'],
+    ['section_bg_color', '--tg-section-bg-color'],
+    ['section_header_text_color', '--tg-section-header-text-color'],
+    ['subtitle_text_color', '--tg-subtitle-text-color'],
+    ['destructive_text_color', '--tg-destructive-text-color'],
+    ['bottom_bar_bg_color', '--tg-bottom-bar-bg-color'],
+    ['section_separator_color', '--tg-section-separator-color']
+];
+
+function themeParamColor(value) {
+    return typeof value === 'string' && value ? value : '';
+}
+
+function hexLuminance(hex) {
+    if (typeof hex !== 'string') return null;
+    var h = hex.trim().replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+    var r = parseInt(h.slice(0, 2), 16);
+    var g = parseInt(h.slice(2, 4), 16);
+    var b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function telegramScheme(webApp, params) {
+    if (webApp && (webApp.colorScheme === 'light' || webApp.colorScheme === 'dark')) {
+        return webApp.colorScheme;
+    }
+    var lum = hexLuminance(params && params.bg_color);
+    if (lum == null) return 'dark';
+    return lum > 0.6 ? 'light' : 'dark';
+}
+
+function themeParamsActive(webApp) {
+    if (!webApp || !webApp.themeParams) return false;
+    var params = webApp.themeParams;
+    return !!(themeParamColor(params.bg_color) || themeParamColor(params.text_color) || themeParamColor(params.button_color));
+}
+
+var tgThemeListenerBound = false;
+
+function setThemeVar(root, name, value) {
+    if (themeParamColor(value) || (typeof value === 'string' && value)) root.style.setProperty(name, value);
+}
+
+function applyTelegramThemeParams(webApp) {
+    var app = webApp || (typeof tg !== 'undefined' ? tg : null);
+    if (!themeParamsActive(app)) return false;
+    var params = app.themeParams;
+    var root = document.documentElement;
+    var scheme = telegramScheme(app, params);
+    root.setAttribute('data-theme', scheme);
+    root.setAttribute('data-tg-theme', '1');
+    if (document.body) document.body.classList.add('tg-themed');
+    root.style.setProperty('color-scheme', scheme);
+
+    TG_THEME_KEYS.forEach(function (pair) {
+        var value = themeParamColor(params[pair[0]]);
+        if (value) root.style.setProperty(pair[1], value);
+    });
+
+    var bg = themeParamColor(params.bg_color);
+    var secondary = themeParamColor(params.secondary_bg_color) || themeParamColor(params.section_bg_color);
+    var card = themeParamColor(params.section_bg_color) || secondary;
+    var headerBg = themeParamColor(params.header_bg_color) || bg;
+    var text = themeParamColor(params.text_color);
+    var hint = themeParamColor(params.hint_color);
+    var subtitle = themeParamColor(params.subtitle_text_color) || hint;
+    var button = themeParamColor(params.button_color);
+    var buttonText = themeParamColor(params.button_text_color);
+    var link = themeParamColor(params.link_color) || themeParamColor(params.accent_text_color);
+    var separator = themeParamColor(params.section_separator_color);
+
+    if (bg) {
+        setThemeVar(root, '--bg-primary', bg);
+        setThemeVar(root, '--bg-body', bg);
+    }
+    if (secondary) {
+        setThemeVar(root, '--bg-secondary', secondary);
+        setThemeVar(root, '--bg-elevated', secondary);
+        setThemeVar(root, '--bg-input', secondary);
+        setThemeVar(root, '--input-bg', secondary);
+    }
+    if (card) setThemeVar(root, '--bg-card', card);
+    if (headerBg) setThemeVar(root, '--bg-overlay', headerBg);
+    if (text) setThemeVar(root, '--text-primary', text);
+    if (subtitle) setThemeVar(root, '--text-secondary', subtitle);
+    if (hint) {
+        setThemeVar(root, '--text-tertiary', hint);
+        setThemeVar(root, '--text-muted', hint);
+    }
+    if (button) {
+        setThemeVar(root, '--shamrock-emerald', button);
+        setThemeVar(root, '--shamrock-emerald-dark', button);
+        setThemeVar(root, '--green-primary', button);
+        setThemeVar(root, '--green-600', button);
+        setThemeVar(root, '--green-700', button);
+        setThemeVar(root, '--border-focus', button);
+        setThemeVar(root, '--gradient-brand', button);
+        setThemeVar(root, '--green-glow', 'transparent');
+        setThemeVar(root, '--shadow-glow', '0 0 0 transparent');
+        setThemeVar(root, '--shadow-glow-sm', '0 0 0 transparent');
+    }
+    if (buttonText) setThemeVar(root, '--tg-button-text-color', buttonText);
+    if (link) setThemeVar(root, '--tg-link-color', link);
+    if (separator) {
+        setThemeVar(root, '--border-color', separator);
+        setThemeVar(root, '--border-default', separator);
+        setThemeVar(root, '--border-subtle', separator);
+        setThemeVar(root, '--input-border', separator);
+    }
+
+    try {
+        if (bg && typeof app.setBackgroundColor === 'function') app.setBackgroundColor(bg);
+    } catch (e) { /* older clients reject custom colors */ }
+    try {
+        if (typeof app.setHeaderColor === 'function') app.setHeaderColor(headerBg || 'bg_color');
+    } catch (e) { /* header color is version-gated */ }
+    try {
+        var bottom = themeParamColor(params.bottom_bar_bg_color) || bg;
+        if (bottom && typeof app.setBottomBarColor === 'function') app.setBottomBarColor(bottom);
+    } catch (e) { /* bottom bar color needs a newer client */ }
+    return true;
+}
+
 function initTheme() {
-    const saved = localStorage.getItem('shamrock-theme');
-    const theme = saved || 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
+    if (applyTelegramThemeParams(typeof tg !== 'undefined' ? tg : null)) {
+        if (!tgThemeListenerBound && tg && typeof tg.onEvent === 'function') {
+            tgThemeListenerBound = true;
+            tg.onEvent('themeChanged', function () { applyTelegramThemeParams(tg); });
+        }
+        return;
+    }
+    var root = document.documentElement;
+    root.removeAttribute('data-tg-theme');
+    if (document.body) document.body.classList.remove('tg-themed');
+    var saved = localStorage.getItem('shamrock-theme');
+    var theme = saved || 'dark';
+    root.setAttribute('data-theme', theme);
 }
 
 function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'light' ? 'dark' : 'light';
+    if (document.documentElement.getAttribute('data-tg-theme') === '1') return;
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('shamrock-theme', next);
-    if (tg) tg.HapticFeedback.impactOccurred('light');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="../shared/id-scan.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="../shared/brand.js"></script>
+    <script>initTheme();</script>
 </head>
 
 <body>
@@ -21,35 +23,36 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- HEADER                                               -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <header class="app-header">
-        <div class="logo">
-            <span class="logo-icon"><img src="../shared/logo.png" alt="Shamrock" class="brand-logo"></span>
-            <div class="logo-text">
-                <h1>Shamrock Bail Bonds</h1>
-                <p class="tagline">Fast. Confidential. Statewide.</p>
-            </div>
-        </div>
-        <div class="header-actions">
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()"
-                aria-label="Toggle dark/light mode"></button>
-            <div class="step-indicator">
-                <div class="step-dots">
-                    <span class="dot active" data-step="1"></span>
-                    <span class="dot" data-step="2"></span>
-                    <span class="dot" data-step="3"></span>
-                    <span class="dot" data-step="4"></span>
-                    <span class="dot" data-step="5"></span>
+    <div class="intake-shell">
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon"><img src="../shared/logo.png" alt="Shamrock" class="brand-logo"></span>
+                <div class="logo-text">
+                    <h1>Shamrock Bail Bonds</h1>
+                    <p class="tagline">Fast. Confidential. Statewide.</p>
                 </div>
-                <span class="step-label">Step <span id="currentStep">1</span> of 5</span>
             </div>
-        </div>
-    </header>
+            <button type="button" class="theme-toggle" id="themeToggle" onclick="toggleTheme()"
+                aria-label="Toggle dark/light mode"></button>
+        </header>
 
-    <!-- ═══════════════════════════════════════════════════ -->
-    <!-- PROGRESS BAR                                         -->
-    <!-- ═══════════════════════════════════════════════════ -->
-    <div class="progress-bar-container">
-        <div class="progress-bar" id="progressBar" style="width: 20%"></div>
+        <div class="intake-steps">
+            <p class="step-status" id="stepStatus" aria-live="polite">
+                <span class="step-kicker">Step <span id="currentStep">1</span> of 5</span>
+                <span class="step-name" id="stepName">Who needs bail?</span>
+            </p>
+            <ol class="step-track" aria-label="Intake steps">
+                <li class="dot active" data-step="1" data-name="Who needs bail?" aria-current="step"><span>1</span></li>
+                <li class="dot" data-step="2" data-name="Your Information"><span>2</span></li>
+                <li class="dot" data-step="3" data-name="Employment &amp; References"><span>3</span></li>
+                <li class="dot" data-step="4" data-name="Documents &amp; Location"><span>4</span></li>
+                <li class="dot" data-step="5" data-name="Review &amp; Submit"><span>5</span></li>
+            </ol>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar" style="width: 20%"></div>
+        </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════ -->
@@ -352,11 +355,10 @@
                     </div>
                     <input type="hidden" id="gpsLat" name="gpsLat">
                     <input type="hidden" id="gpsLng" name="gpsLng">
-                    <div class="hidden" id="manualLocationFallback" style="margin-top:10px;">
-                        <p style="color:var(--muted);font-size:0.85em;margin-bottom:6px;">&#128205; We couldn't detect
-                            your location automatically.</p>
+                    <div class="hidden manual-location" id="manualLocationFallback">
+                        <p class="manual-location-note">&#128205; We couldn't detect your location automatically.</p>
                         <input type="text" id="manualCity" placeholder="City, State (e.g. Fort Myers, FL)"
-                            style="width:100%;margin-bottom:6px;">
+                            autocomplete="address-level2">
                         <button type="button" onclick="useManualLocation()" class="btn btn-secondary btn-sm">Use This
                             Location</button>
                     </div>
@@ -377,10 +379,8 @@
 
                 <div class="consent-box">
                     <label class="consent-label">
-                        <input type="checkbox" id="consentCheck" name="consent" required
-                            style="position:absolute;opacity:0;width:44px;height:44px;cursor:pointer;">
-                        <span class="checkmark"
-                            style="min-width:44px;min-height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;"></span>
+                        <input type="checkbox" id="consentCheck" name="consent" required>
+                        <span class="checkmark"></span>
                         <span class="consent-text">
                             I agree to sign documents electronically, allow location capture at signing,
                             receive text/voice communications about this case, and authorize Shamrock Bail
@@ -444,7 +444,6 @@
         </div>
     </div>
 
-    <script src="../shared/brand.js"></script>
     <script type="module" src="../shared/id-scan.js"></script>
     <script src="app.js"></script>
 </body>

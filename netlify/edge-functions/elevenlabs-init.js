@@ -1,12 +1,14 @@
 /**
- * elevenlabs-init.js — conversation start for Shannon.
+ * elevenlabs-init.js — conversation start for the Brendan paperwork assistant.
  *
  * One memory path: Super CRM /api/agent-brain/memory/lookup (same as
  * twilio-voice-inbound.js). Do not call Mem0 or GAS here.
- * Greeting is always the short listen-first line.
+ * Greeting is one of the Brendan's-assistant lines, chosen per call.
  *
  * URL: https://shamrock-telegram.netlify.app/api/elevenlabs-init
  */
+
+import { brendanAssistantFirstMessageOverride } from '../lib/brendan-assistant-greeting.js';
 
 const ANON_IDS = new Set(['', 'anonymous', 'unknown', 'restricted', 'unavailable']);
 
@@ -35,22 +37,8 @@ function extractCallerPhone(body, url) {
     return '';
 }
 
-const OPENING_TAILS = [
-    'How can I help today?',
-    'How can I help you today?',
-    'What can I do for you?',
-    'How can I help?',
-    "I'm here, how can I help?",
-    'What can I help you with?',
-];
-
-function shannonOpening() {
-    const tail = OPENING_TAILS[Math.floor(Math.random() * OPENING_TAILS.length)];
-    return 'Shamrock Bail Bonds! This is Brendan. ' + tail;
-}
-
 function openingOverride() {
-    return { agent: { first_message: shannonOpening() } };
+    return brendanAssistantFirstMessageOverride();
 }
 
 function emptyInitPayload() {
