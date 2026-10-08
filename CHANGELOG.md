@@ -2,6 +2,17 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — Caller auth on /api/checkin-geo-alert
+
+### Security
+
+- `POST /api/checkin-geo-alert` now requires caller auth, checked before any outbound call. Without it, anyone could push fake geo-fence alerts into Slack #alerts. A request must carry one of:
+  - Server callers: an `X-GAS-API-Key` header equal to the Netlify env var `GAS_API_KEY`. That's the same shared secret GAS holds as its `GAS_API_KEY` Script Property, so no new secret is needed.
+  - Telegram mini-app: `initData` (`Telegram.WebApp.initData`) in the body. It's verified with HMAC-SHA256 against the Netlify env var `TELEGRAM_BOT_TOKEN`, including the `auth_date` freshness check, by the shared `validateTelegramInitData` that `crm-intake` already uses.
+  - Anything else gets `401`, and nothing is posted. If both env vars are unset, every request fails.
+- No repo calls this endpoint today. The old header comment said GAS called it, but GAS has no such call. So no live caller breaks.
+- Tests: an unauthenticated request, a bad or stale credential, or missing env vars each return `401` with zero outbound fetches. A valid signed `initData` or a valid server header passes. All fixtures are fake, and fetch is mocked.
+
 ## 2026-10-08 — GAS API key on risk-mitigation actions
 
 ### Changed
