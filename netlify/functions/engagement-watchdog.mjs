@@ -15,7 +15,7 @@
  * 3. For each: escalate to co-signer via SMS + post Slack alert
  * 4. Mark case as "High Flight Risk" in GAS tracker
  */
-import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { GAS_ENDPOINT, gasApiKey } from './shared/ai-client.mjs';
 
 export default async () => {
     console.log('[engagement-watchdog] Checking for unacknowledged court reminders...');
@@ -25,7 +25,7 @@ export default async () => {
         const gasResponse = await fetch(GAS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'get_unacknowledged_reminders', hoursUntilCourt: 24 }),
+            body: JSON.stringify({ action: 'get_unacknowledged_reminders', apiKey: gasApiKey(), hoursUntilCourt: 24 }),
             redirect: 'follow',
         });
 
@@ -91,6 +91,7 @@ export default async () => {
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: 'escalate_to_cosigner',
+                    apiKey: gasApiKey(),
                     escalations,
                     timestamp: new Date().toISOString(),
                 }),

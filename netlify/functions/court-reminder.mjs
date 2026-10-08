@@ -5,7 +5,7 @@
  * Fetches upcoming court dates from GAS, generates AI-personalized
  * reminders, and triggers notifications via GAS.
  */
-import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { getOpenAI, GAS_ENDPOINT, gasApiKey } from './shared/ai-client.mjs';
 
 export default async () => {
     console.log('[court-reminder] Running scheduled check...');
@@ -15,7 +15,7 @@ export default async () => {
         const gasResponse = await fetch(GAS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'get_upcoming_court_dates', hoursAhead: 48 }),
+            body: JSON.stringify({ action: 'get_upcoming_court_dates', apiKey: gasApiKey(), hoursAhead: 48 }),
             redirect: 'follow',
         });
 
@@ -78,7 +78,7 @@ export default async () => {
             await fetch(GAS_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'send_court_reminders', reminders }),
+                body: JSON.stringify({ action: 'send_court_reminders', apiKey: gasApiKey(), reminders }),
                 redirect: 'follow',
             });
         }

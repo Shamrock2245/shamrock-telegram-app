@@ -45,7 +45,7 @@ export default async () => {
         const gasResponse = await fetch(GAS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'get_recent_client_messages', hoursSince: 4 }),
+            body: JSON.stringify({ action: 'get_recent_client_messages', apiKey: gasApiKey(), hoursSince: 4 }),
             redirect: 'follow',
         });
 
@@ -173,6 +173,7 @@ export default async () => {
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: 'flag_high_stress_case',
+                    apiKey: gasApiKey(),
                     flagged,
                     timestamp: new Date().toISOString(),
                 }),
