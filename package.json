@@ -13,6 +13,8 @@
         "@netlify/plugin-lighthouse": "^6.0.1"
     },
     "scripts": {
+        "stamp-assets": "node scripts/stamp-asset-versions.mjs --write",
+        "postinstall": "node scripts/stamp-asset-versions.mjs",
         "test": "node --test tests/*.mjs"
     }
 }
