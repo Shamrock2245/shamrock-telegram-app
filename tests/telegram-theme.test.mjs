@@ -165,7 +165,7 @@ test('intake boots theme from the shared helper and names the five existing step
     const html = fs.readFileSync(new URL('../intake/index.html', import.meta.url), 'utf8');
     const app = fs.readFileSync(new URL('../intake/app.js', import.meta.url), 'utf8');
     const css = fs.readFileSync(new URL('../intake/styles.css', import.meta.url), 'utf8');
-    assert.match(html, /<script src="\.\.\/shared\/brand\.js"><\/script>\s*<script>initTheme\(\);<\/script>/);
+    assert.match(html, /<script src="\.\.\/shared\/brand\.js(?:\?v=[0-9a-f]{7,40})?"><\/script>\s*<script>initTheme\(\);<\/script>/);
     assert.match(html, /data-name="Who needs bail\?"/);
     assert.match(html, /data-name="Your Information"/);
     assert.match(html, /data-name="Employment &amp; References"/);

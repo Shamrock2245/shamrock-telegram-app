@@ -286,9 +286,17 @@
   touch-action: manipulation;
 }
 
-.id-scan-btn-primary {
+/* Brand emerald face. Ink has to clear 4.5:1 on both gradient stops.
+   #022c22 is only 4.02:1 on #059669. #001810 is 7.27:1 on #10b981 and
+   4.90:1 on #059669 (the worst stop along the gradient).
+   `.form-group label` (one class + element) was beating `.id-scan-btn-primary`
+   and painting light-theme --text-secondary (#475569) on this face, about
+   2.99:1 on #10b981 and 2.01:1 on #059669. The label selectors below win. */
+label.id-scan-btn-primary,
+.form-group label.id-scan-btn-primary,
+.upload-group label.id-scan-btn-primary {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #022c22;
+  color: #001810;
   border: 0;
 }
 
