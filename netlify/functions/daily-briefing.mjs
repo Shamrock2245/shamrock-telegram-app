@@ -17,13 +17,13 @@ export default async () => {
             fetch(GAS_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'get_daily_stats' }),
+                body: JSON.stringify({ action: 'get_daily_stats', apiKey: gasApiKey() }),
                 redirect: 'follow',
             }),
             fetch(GAS_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'get_forfeiture_cases' }),
+                body: JSON.stringify({ action: 'get_forfeiture_cases', apiKey: gasApiKey() }),
                 redirect: 'follow',
             }),
         ]);

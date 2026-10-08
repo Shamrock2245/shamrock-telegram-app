@@ -2,6 +2,18 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — GAS API key on risk-mitigation actions
+
+### Changed
+
+- The scheduled functions now send `apiKey` (Netlify env `GAS_API_KEY`, read server-side through `gasApiKey()`) on every GAS risk-mitigation action they call:
+  - `court-reminder`: `get_upcoming_court_dates`, `send_court_reminders`
+  - `engagement-watchdog`: `get_unacknowledged_reminders`, `escalate_to_cosigner`
+  - `sentiment-watchdog`: `get_recent_client_messages`, `flag_high_stress_case`
+  - `daily-briefing`: `get_daily_stats`, `get_forfeiture_cases`
+  - This prepares for a GAS change (portal `backend-gas/Code.js`) that will require the key on these actions. Until that GAS change is pushed, GAS ignores the field. All four functions are scheduled, so Netlify does not expose them by URL in production.
+- `npm test` fails if any server-side call to a keyed GAS action lacks `apiKey: gasApiKey()`, or if a browser mini-app starts calling a keyed action. Runtime tests run each function against mocked GAS and OpenAI and check that every GAS call carries the key.
+
 ## 2026-10-08 — GAS API key on Slack posts
 
 ### Changed
