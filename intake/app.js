@@ -440,7 +440,7 @@ function submitForm() {
         });
     }
 
-    // 2. CRM first. Every failure still tries GAS unless the server already did.
+    // 2. CRM first. The server does not call GAS. This page does, once.
     readIdFrontBase64().then(function (idImage) {
         var crmPayload = Object.assign({}, intakeData);
         if (idImage) {
@@ -457,28 +457,16 @@ function submitForm() {
             });
         });
     }).then(function (out) {
-        var data = (out && out.data) || {};
-        var plan = intakeSavePlan(data);
-        if (plan === 'saved') {
-            console.log('[intake] Submission result:', data.via, data.intake_id || intakeId);
-            return uploadIntakeIds().then(function () { notifyTelegram(); });
-        }
-        if (plan === 'honest_error') {
-            var err = new Error(data.error || 'CRM and GAS fallback failed');
-            err.leadUnsaved = true;
-            throw err;
-        }
-        console.error('[intake] CRM intake failed; falling back to GAS', data.error);
-        return saveThroughGas();
+        return settleCrmResult((out && out.data) || {}, {
+            intakeId: intakeId,
+            uploadIntakeIds: uploadIntakeIds,
+            notifyTelegram: notifyTelegram,
+            saveThroughGas: saveThroughGas
+        });
     }).catch(function (error) {
-        console.error('[intake] Background submission error:', error);
-        if (error && (error.leadUnsaved || error.gasAttempted)) {
-            honestSaveFailure();
-            return;
-        }
-        return saveThroughGas().catch(function (gasError) {
-            console.error('[intake] GAS fallback failed:', gasError);
-            honestSaveFailure();
+        return recoverIntakeSave(error, {
+            honestSaveFailure: honestSaveFailure,
+            saveThroughGas: saveThroughGas
         });
     });
 }
@@ -486,8 +474,33 @@ function submitForm() {
 function intakeSavePlan(serverData) {
     var data = serverData || {};
     if (data.success) return 'saved';
-    if (data.fallback_attempted === true && data.gas_available !== false) return 'honest_error';
     return 'gas_fallback';
+}
+
+function settleCrmResult(serverData, actions) {
+    var data = serverData || {};
+    var plan = intakeSavePlan(data);
+    if (plan === 'saved') {
+        console.log('[intake] Submission result:', data.via, data.intake_id || actions.intakeId || '');
+        var uploaded = actions.uploadIntakeIds ? actions.uploadIntakeIds() : Promise.resolve();
+        return Promise.resolve(uploaded).then(function () {
+            if (actions.notifyTelegram) actions.notifyTelegram();
+        });
+    }
+    console.error('[intake] CRM intake failed; falling back to GAS', data.error);
+    return actions.saveThroughGas();
+}
+
+function recoverIntakeSave(error, actions) {
+    console.error('[intake] Background submission error:', error);
+    if (error && (error.leadUnsaved || error.gasAttempted)) {
+        actions.honestSaveFailure();
+        return Promise.resolve();
+    }
+    return actions.saveThroughGas().catch(function (gasError) {
+        console.error('[intake] GAS fallback failed:', gasError);
+        actions.honestSaveFailure();
+    });
 }
 
 function uploadFileToGAS(file, docType, telegramUserId) {

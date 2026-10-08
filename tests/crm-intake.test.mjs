@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    DEFAULT_TIMEOUT_MS,
     bestEmail,
     buildCrmIntakeBody,
     scanIdImage,
@@ -10,6 +11,11 @@ import {
     statedPhone,
     submitCrmIntake,
 } from '../netlify/functions/shared/crm-intake.mjs';
+
+test('scan plus submit stays well under the Netlify function limit', () => {
+    assert.equal(DEFAULT_TIMEOUT_MS, 3500);
+    assert.ok(DEFAULT_TIMEOUT_MS * 2 <= 8000);
+});
 
 const ENV = {
     GAS_API_KEY: 'test-gas-key',

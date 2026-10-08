@@ -12,8 +12,9 @@
 
 const DEFAULT_LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
 const OFFICE_EMAIL = 'admin@shamrockbailbonds.biz';
-// Stay under the 10s Netlify function limit when a scan and a submit run in series.
-const DEFAULT_TIMEOUT_MS = 4000;
+// A scan and a submit run in series. 3.5s each keeps the function near 7s,
+// under Netlify's 10s limit. The browser, not this function, calls GAS.
+export const DEFAULT_TIMEOUT_MS = 3500;
 
 function requestTimeout(timeoutMs) {
     const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : DEFAULT_TIMEOUT_MS;

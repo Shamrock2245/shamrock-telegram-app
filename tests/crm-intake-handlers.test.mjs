@@ -117,7 +117,7 @@ test('mini-app handler scans the ID, submits telegram_miniapp, and skips GAS whe
     }
 });
 
-test('mini-app handler falls back to GAS only after the CRM call fails', async () => {
+test('mini-app handler returns crm_failed and does not call GAS when CRM is down', async () => {
     const mock = mockFetch([
         {
             match: '/api/intake/submit',
@@ -125,14 +125,6 @@ test('mini-app handler falls back to GAS only after the CRM call fails', async (
                 ok: false,
                 status: 503,
                 json: async () => ({ success: false, error: 'down' }),
-            }),
-        },
-        {
-            match: 'gas.example.test',
-            respond: () => ({
-                ok: true,
-                status: 200,
-                text: async () => JSON.stringify({ success: true, intakeId: 'TG-ABC' }),
             }),
         },
     ]);
@@ -144,15 +136,13 @@ test('mini-app handler falls back to GAS only after the CRM call fails', async (
             IndPhone: '2395550101',
         }));
         const data = await response.json();
-        assert.equal(data.via, 'gas_fallback');
+        assert.equal(response.status, 502);
+        assert.equal(data.success, false);
+        assert.equal(data.error, 'crm_failed');
+        assert.equal(data.via, 'crm_failed');
+        assert.equal(mock.calls.length, 1);
         assert.equal(mock.calls[0].url.includes('/api/intake/submit'), true);
-        assert.equal(mock.calls[1].url.includes('gas.example.test'), true);
-        assert.equal(mock.calls[1].body.action, 'telegram_mini_app_intake');
-        assert.equal(mock.calls[1].body.source, 'telegram_mini_app');
-        assert.equal(mock.calls[1].body.surety_id, 'osi');
-        assert.equal(mock.calls[1].body.intakeId, 'TG-ABC');
-        assert.equal(mock.calls[1].body.id_image_b64, undefined);
-        assert.equal(mock.calls[1].body.initData, undefined);
+        assert.equal(mock.calls.some((call) => call.url.includes('gas.example')), false);
     } finally {
         mock.restore();
     }

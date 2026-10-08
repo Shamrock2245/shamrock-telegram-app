@@ -24,7 +24,7 @@ function signInitData(token = process.env.TELEGRAM_BOT_TOKEN) {
     return params.toString();
 }
 
-test('a CRM miss with no GAS url tells the browser to try its own fallback', async () => {
+test('a CRM miss returns crm_failed and does not fetch GAS', async () => {
     const original = globalThis.fetch;
     const calls = [];
     globalThis.fetch = async (url) => {
@@ -49,8 +49,9 @@ test('a CRM miss with no GAS url tells the browser to try its own fallback', asy
         const data = await response.json();
         assert.equal(response.status, 502);
         assert.equal(data.success, false);
-        assert.equal(data.fallback_attempted, false);
-        assert.equal(data.gas_available, false);
+        assert.equal(data.error, 'crm_failed');
+        assert.equal(data.via, 'crm_failed');
+        assert.equal(calls.length, 1);
         assert.equal(calls.some((url) => url.includes('gas')), false);
     } finally {
         globalThis.fetch = original;

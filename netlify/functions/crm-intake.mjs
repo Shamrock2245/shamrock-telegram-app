@@ -1,7 +1,7 @@
 /**
  * Server-side intake for the Telegram mini-app.
  * Scans an ID when one was uploaded, then POST /api/intake/submit.
- * The existing GAS queue runs only when that call fails.
+ * A CRM failure returns JSON immediately. The browser saves through GAS.
  */
 import {
     buildCrmIntakeBody,
@@ -30,54 +30,6 @@ function sourceFor(body) {
     if (raw === 'shannon_voice' || raw.indexOf('shannon') !== -1) return 'shannon_voice';
     if (raw.indexOf('mini') !== -1) return 'telegram_miniapp';
     return 'telegram';
-}
-
-function configuredGasUrl() {
-    const url = String(process.env.GAS_WEB_APP_URL || process.env.GAS_ENDPOINT || '').trim();
-    if (!url || url === 'MISSING_GAS_WEB_APP_URL') return '';
-    return url;
-}
-
-async function gasFallback(body) {
-    const payload = { ...(body || {}) };
-    delete payload.id_image_b64;
-    delete payload.id_filename;
-    delete payload.initData;
-    // Match the browser GAS payload: underscore source and the surety the sheet expects.
-    payload.action = 'telegram_mini_app_intake';
-    payload.source = 'telegram_mini_app';
-    payload.surety_id = payload.surety_id || 'osi';
-    const gasUrl = configuredGasUrl();
-    if (!gasUrl) {
-        console.error('[crm-intake] GAS fallback unavailable: GAS_WEB_APP_URL is not set');
-        return { ok: false, error: 'missing_gas_url', gas_available: false };
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
-    try {
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload),
-            redirect: 'follow',
-            signal: controller.signal,
-        });
-        const text = await response.text();
-        if (!response.ok) {
-            console.error('[crm-intake] GAS fallback failed status=' + response.status);
-            return { ok: false, error: 'gas_http_' + response.status, gas_available: true };
-        }
-        try {
-            return { ok: true, body: JSON.parse(text) };
-        } catch {
-            return { ok: true, body: { success: true } };
-        }
-    } catch (err) {
-        console.error('[crm-intake] GAS fallback failed error=' + (err && err.message));
-        return { ok: false, error: err && err.message ? err.message : 'gas_network', gas_available: true };
-    } finally {
-        clearTimeout(timer);
-    }
 }
 
 export default async function handler(req) {
@@ -128,25 +80,12 @@ export default async function handler(req) {
         });
     }
 
-    console.error('[crm-intake] CRM submit failed; using GAS fallback source=' + source + ' error=' + crm.error);
-    const gas = await gasFallback(body);
-    if (gas.ok) {
-        return json({
-            success: true,
-            via: 'gas_fallback',
-            source,
-            intake_id: payload.intakeId || '',
-            gas: gas.body || null,
-        });
-    }
-    const gasAvailable = gas.gas_available !== false && gas.error !== 'missing_gas_url';
+    console.error('[crm-intake] CRM submit failed source=' + source + ' error=' + crm.error);
     return json({
         success: false,
-        via: 'failed',
-        fallback_attempted: gasAvailable,
-        gas_available: gasAvailable,
+        via: 'crm_failed',
+        error: 'crm_failed',
         source,
-        error: crm.error || gas.error || 'intake_failed',
     }, 502);
 }
 
