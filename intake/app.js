@@ -405,7 +405,42 @@ function submitForm() {
     clearFormSession('intake');
     showSuccess(intakeId);
 
-    // 2. CRM first. GAS only if that call cannot be completed.
+    function uploadIntakeIds() {
+        var ups = [];
+        if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
+        if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
+        return Promise.all(ups);
+    }
+
+    function notifyTelegram() {
+        if (!tg) return;
+        try {
+            tg.sendData(JSON.stringify({
+                type: 'intake_submitted',
+                defName: intakeData.DefName,
+                indName: intakeData.IndName,
+                facility: intakeData.DefFacility,
+                timestamp: intakeData.timestamp
+            }));
+        } catch (e) { }
+    }
+
+    function honestSaveFailure() {
+        if (tg) tg.showAlert('We could not save your application. Please tap "Call Us Now" so a bondsman can take it.');
+    }
+
+    function saveThroughGas() {
+        return gasPost(SHAMROCK_GAS_ENDPOINT, gasPayload).then(function (result) {
+            if (result) console.log('[intake] Submission result:', result);
+            return uploadIntakeIds().then(function () { notifyTelegram(); });
+        }).catch(function (err) {
+            var wrapped = err instanceof Error ? err : new Error(String(err || 'gas_failed'));
+            wrapped.gasAttempted = true;
+            throw wrapped;
+        });
+    }
+
+    // 2. CRM first. Every failure still tries GAS unless the server already did.
     readIdFrontBase64().then(function (idImage) {
         var crmPayload = Object.assign({}, intakeData);
         if (idImage) {
@@ -422,42 +457,37 @@ function submitForm() {
             });
         });
     }).then(function (out) {
-        if (out.data && out.data.success) {
-            console.log('[intake] Submission result:', out.data.via, out.data.intake_id || intakeId);
+        var data = (out && out.data) || {};
+        var plan = intakeSavePlan(data);
+        if (plan === 'saved') {
+            console.log('[intake] Submission result:', data.via, data.intake_id || intakeId);
+            return uploadIntakeIds().then(function () { notifyTelegram(); });
+        }
+        if (plan === 'honest_error') {
+            var err = new Error(data.error || 'CRM and GAS fallback failed');
+            err.leadUnsaved = true;
+            throw err;
+        }
+        console.error('[intake] CRM intake failed; falling back to GAS', data.error);
+        return saveThroughGas();
+    }).catch(function (error) {
+        console.error('[intake] Background submission error:', error);
+        if (error && (error.leadUnsaved || error.gasAttempted)) {
+            honestSaveFailure();
             return;
         }
-        if (out.data && out.data.fallback_attempted) {
-            throw new Error(out.data.error || 'CRM and GAS fallback failed');
-        }
-        console.error('[intake] CRM intake failed; falling back to GAS', out.data && out.data.error);
-        return gasPost(SHAMROCK_GAS_ENDPOINT, gasPayload);
-    })
-        .then(function (result) {
-            if (result) console.log('[intake] Submission result:', result);
-            // Upload files in parallel
-            var ups = [];
-            if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
-            if (uploadedFiles.idBack) ups.push(uploadFileToGAS(uploadedFiles.idBack, 'id_back', intakeData.telegramUserId));
-            return Promise.all(ups);
-        })
-        .then(function () {
-            if (tg) {
-                try {
-                    tg.sendData(JSON.stringify({
-                        type: 'intake_submitted',
-                        defName: intakeData.DefName,
-                        indName: intakeData.IndName,
-                        facility: intakeData.DefFacility,
-                        timestamp: intakeData.timestamp
-                    }));
-                } catch (e) { }
-            }
-        })
-        .catch(function (error) {
-            console.error('[intake] Background submission error:', error);
-            // Since we already showed success, we might optionally alert the user or rely on staff
-            if (tg) tg.showAlert('Warning: Network error. We have saved your info securely, but if you don\'t hear back shortly, please tap "Call Us Now".');
+        return saveThroughGas().catch(function (gasError) {
+            console.error('[intake] GAS fallback failed:', gasError);
+            honestSaveFailure();
         });
+    });
+}
+
+function intakeSavePlan(serverData) {
+    var data = serverData || {};
+    if (data.success) return 'saved';
+    if (data.fallback_attempted === true && data.gas_available !== false) return 'honest_error';
+    return 'gas_fallback';
 }
 
 function uploadFileToGAS(file, docType, telegramUserId) {

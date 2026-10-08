@@ -2,6 +2,14 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — Mini-app intake auth and fallback
+
+### Changed
+
+- `POST /api/crm-intake` checks Telegram `initData` against `TELEGRAM_BOT_TOKEN` and refuses the request when that check fails. It also limits each Telegram user to 20 submits per 10 minutes.
+- A CRM or network failure still posts the lead to the existing GAS queue, including when the server has no `GAS_WEB_APP_URL`. The server fallback uses `telegram_mini_app` and surety `osi`, the same payload the browser already sent. If both paths fail, the mini-app says the application was not saved.
+- ID scan and CRM submit calls abort after 4 seconds. Shannon's notify-bondsman tool still forwards the callback and staff alert to GAS after a CRM success, and it reuses the call's case reference.
+
 ## 2026-10-07 — Canonical CRM intake
 
 ### Changed

@@ -12,6 +12,18 @@
 
 const DEFAULT_LEADS_BASE = 'https://leads.shamrockbailbonds.biz';
 const OFFICE_EMAIL = 'admin@shamrockbailbonds.biz';
+// Stay under the 10s Netlify function limit when a scan and a submit run in series.
+const DEFAULT_TIMEOUT_MS = 4000;
+
+function requestTimeout(timeoutMs) {
+    const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : DEFAULT_TIMEOUT_MS;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return {
+        signal: controller.signal,
+        clear() { clearTimeout(timer); },
+    };
+}
 
 export function leadsBaseUrl(env = process.env) {
     return String(
@@ -280,23 +292,32 @@ export async function scanIdImage(imageB64, filename, options = {}) {
     const key = machineKey(env);
     const b64 = cleanText(imageB64);
     if (!b64 || !key) return {};
-    const response = await fetchImpl(leadsBaseUrl(env) + '/api/id/scan-ocr', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': key,
-        },
-        body: JSON.stringify({
-            image_b64: b64,
-            filename: cleanText(filename) || 'id.jpg',
-        }),
-    });
-    if (!response.ok) {
-        console.error('[crm-intake] ID scan failed status=' + response.status);
+    const timeout = requestTimeout(options.timeoutMs);
+    try {
+        const response = await fetchImpl(leadsBaseUrl(env) + '/api/id/scan-ocr', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': key,
+            },
+            body: JSON.stringify({
+                image_b64: b64,
+                filename: cleanText(filename) || 'id.jpg',
+            }),
+            signal: timeout.signal,
+        });
+        if (!response.ok) {
+            console.error('[crm-intake] ID scan failed status=' + response.status);
+            return {};
+        }
+        const data = await response.json().catch(() => ({}));
+        return (data && data.extracted && typeof data.extracted === 'object') ? data.extracted : {};
+    } catch (err) {
+        console.error('[crm-intake] ID scan failed error=' + (err && err.message));
         return {};
+    } finally {
+        timeout.clear();
     }
-    const data = await response.json().catch(() => ({}));
-    return (data && data.extracted && typeof data.extracted === 'object') ? data.extracted : {};
 }
 
 export async function submitCrmIntake(body, options = {}) {
@@ -308,6 +329,7 @@ export async function submitCrmIntake(body, options = {}) {
         console.error('[crm-intake] FAILED source=' + source + ' error=missing_GAS_API_KEY_or_LEADS_INTERNAL_TOKEN');
         return { ok: false, status: 0, error: 'missing_machine_key', source };
     }
+    const timeout = requestTimeout(options.timeoutMs);
     let response;
     try {
         response = await fetchImpl(leadsBaseUrl(env) + '/api/intake/submit', {
@@ -317,10 +339,15 @@ export async function submitCrmIntake(body, options = {}) {
                 'X-API-Key': key,
             },
             body: JSON.stringify(body),
+            signal: timeout.signal,
         });
     } catch (err) {
-        console.error('[crm-intake] FAILED source=' + source + ' error=' + (err && err.message));
-        return { ok: false, status: 0, error: err && err.message ? err.message : 'network', source };
+        const aborted = !!(err && (err.name === 'AbortError' || timeout.signal.aborted));
+        const error = aborted ? 'timeout' : (err && err.message ? err.message : 'network');
+        console.error('[crm-intake] FAILED source=' + source + ' error=' + error);
+        return { ok: false, status: 0, error, source };
+    } finally {
+        timeout.clear();
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data || data.success !== true) {

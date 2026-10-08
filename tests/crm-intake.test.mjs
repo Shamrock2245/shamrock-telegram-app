@@ -226,3 +226,40 @@ test('missing machine key fails closed without calling the CRM', async () => {
     assert.equal(result.error, 'missing_machine_key');
     assert.equal(called, false);
 });
+
+test('submitCrmIntake aborts a hung CRM call well under the function limit', async () => {
+    const result = await submitCrmIntake(
+        { source: 'telegram_miniapp', IndName: 'Jane Public' },
+        {
+            timeoutMs: 30,
+            env: ENV,
+            fetchImpl: (_url, init) => new Promise((_resolve, reject) => {
+                init.signal.addEventListener('abort', () => {
+                    const err = new Error('The operation was aborted');
+                    err.name = 'AbortError';
+                    reject(err);
+                });
+            }),
+        }
+    );
+    assert.equal(result.ok, false);
+    assert.equal(result.error, 'timeout');
+});
+
+test('scanIdImage aborts a hung OCR call', async () => {
+    let aborted = false;
+    const scan = await scanIdImage('abc123', 'id.jpg', {
+        timeoutMs: 30,
+        env: ENV,
+        fetchImpl: (_url, init) => new Promise((_resolve, reject) => {
+            init.signal.addEventListener('abort', () => {
+                aborted = true;
+                const err = new Error('The operation was aborted');
+                err.name = 'AbortError';
+                reject(err);
+            });
+        }),
+    });
+    assert.equal(aborted, true);
+    assert.deepEqual(scan, {});
+});

@@ -3,12 +3,16 @@
  * Scans an ID when one was uploaded, then POST /api/intake/submit.
  * The existing GAS queue runs only when that call fails.
  */
-import { GAS_ENDPOINT } from './shared/ai-client.mjs';
 import {
     buildCrmIntakeBody,
     scanIdImage,
     submitCrmIntake,
 } from './shared/crm-intake.mjs';
+import { checkLimit } from './shared/rate-limiter.mjs';
+import { validateTelegramInitData } from './shared/telegram-init-data.mjs';
+
+const INTAKE_LIMIT = 20;
+const INTAKE_WINDOW_MS = 10 * 60 * 1000;
 
 const CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -28,26 +32,40 @@ function sourceFor(body) {
     return 'telegram';
 }
 
+function configuredGasUrl() {
+    const url = String(process.env.GAS_WEB_APP_URL || process.env.GAS_ENDPOINT || '').trim();
+    if (!url || url === 'MISSING_GAS_WEB_APP_URL') return '';
+    return url;
+}
+
 async function gasFallback(body) {
     const payload = { ...(body || {}) };
     delete payload.id_image_b64;
     delete payload.id_filename;
-    payload.action = payload.action || 'telegram_mini_app_intake';
-    if (!GAS_ENDPOINT || GAS_ENDPOINT === 'MISSING_GAS_WEB_APP_URL') {
+    delete payload.initData;
+    // Match the browser GAS payload: underscore source and the surety the sheet expects.
+    payload.action = 'telegram_mini_app_intake';
+    payload.source = 'telegram_mini_app';
+    payload.surety_id = payload.surety_id || 'osi';
+    const gasUrl = configuredGasUrl();
+    if (!gasUrl) {
         console.error('[crm-intake] GAS fallback unavailable: GAS_WEB_APP_URL is not set');
-        return { ok: false, error: 'missing_gas_url' };
+        return { ok: false, error: 'missing_gas_url', gas_available: false };
     }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
     try {
-        const response = await fetch(GAS_ENDPOINT, {
+        const response = await fetch(gasUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(payload),
             redirect: 'follow',
+            signal: controller.signal,
         });
         const text = await response.text();
         if (!response.ok) {
             console.error('[crm-intake] GAS fallback failed status=' + response.status);
-            return { ok: false, error: 'gas_http_' + response.status };
+            return { ok: false, error: 'gas_http_' + response.status, gas_available: true };
         }
         try {
             return { ok: true, body: JSON.parse(text) };
@@ -56,7 +74,9 @@ async function gasFallback(body) {
         }
     } catch (err) {
         console.error('[crm-intake] GAS fallback failed error=' + (err && err.message));
-        return { ok: false, error: err && err.message ? err.message : 'gas_network' };
+        return { ok: false, error: err && err.message ? err.message : 'gas_network', gas_available: true };
+    } finally {
+        clearTimeout(timer);
     }
 }
 
@@ -71,6 +91,16 @@ export default async function handler(req) {
         return json({ success: false, error: 'Invalid JSON body' }, 400);
     }
     if (!body || typeof body !== 'object') return json({ success: false, error: 'Empty body' }, 400);
+
+    const auth = validateTelegramInitData(body.initData, process.env.TELEGRAM_BOT_TOKEN);
+    if (!auth.ok) return json({ success: false, error: 'Unauthorized' }, 401);
+
+    const limit = await checkLimit(req, 'crm-intake', INTAKE_LIMIT, {
+        windowMs: INTAKE_WINDOW_MS,
+        subject: 'tg:' + auth.userId,
+        ...(req.__rateStore ? { store: req.__rateStore } : {}),
+    });
+    if (!limit.allowed) return json({ success: false, error: 'Too many requests' }, 429);
 
     const source = sourceFor(body);
     let scan = {};
@@ -109,10 +139,12 @@ export default async function handler(req) {
             gas: gas.body || null,
         });
     }
+    const gasAvailable = gas.gas_available !== false && gas.error !== 'missing_gas_url';
     return json({
         success: false,
         via: 'failed',
-        fallback_attempted: true,
+        fallback_attempted: gasAvailable,
+        gas_available: gasAvailable,
         source,
         error: crm.error || gas.error || 'intake_failed',
     }, 502);

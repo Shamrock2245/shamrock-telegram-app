@@ -17,19 +17,25 @@ const WINDOW_MS = 60_000; // 1-minute window
  * @param {Request} req - The incoming request
  * @param {string} functionName - Name of the function (used as key prefix)
  * @param {number} maxRequests - Max requests allowed per window (default: 20)
+ * @param {{ windowMs?: number, subject?: string, store?: { get: Function, set: Function } }} [options]
+ *   subject replaces the IP in the key. store replaces the Netlify Blobs store.
+ *   Existing callers keep a 60s window keyed by IP.
  * @returns {{ allowed: boolean, remaining: number, resetAt: number }}
  */
-export async function checkLimit(req, functionName, maxRequests = 20) {
+export async function checkLimit(req, functionName, maxRequests = 20, options) {
+    const opts = options || {};
+    const windowMs = Number(opts.windowMs) > 0 ? Number(opts.windowMs) : WINDOW_MS;
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
         || req.headers.get('x-nf-client-connection-ip')
         || req.headers.get('client-ip')
         || 'unknown';
+    const subject = opts.subject ? String(opts.subject) : ip;
 
-    const key = `${functionName}:${ip}`;
+    const key = `${functionName}:${subject}`;
     const now = Date.now();
 
     try {
-        const store = getStore('rate-limits');
+        const store = opts.store || getStore('rate-limits');
         const raw = await store.get(key);
 
         let record = null;
@@ -42,17 +48,17 @@ export async function checkLimit(req, functionName, maxRequests = 20) {
         }
 
         // If no record or window expired, start fresh
-        if (!record || (now - record.windowStart) >= WINDOW_MS) {
+        if (!record || (now - record.windowStart) >= windowMs) {
             const newRecord = { count: 1, windowStart: now };
             await store.set(key, JSON.stringify(newRecord));
-            return { allowed: true, remaining: maxRequests - 1, resetAt: now + WINDOW_MS };
+            return { allowed: true, remaining: maxRequests - 1, resetAt: now + windowMs };
         }
 
         // Within the window — increment
         record.count += 1;
 
         if (record.count > maxRequests) {
-            const resetAt = record.windowStart + WINDOW_MS;
+            const resetAt = record.windowStart + windowMs;
             return { allowed: false, remaining: 0, resetAt };
         }
 
@@ -60,11 +66,11 @@ export async function checkLimit(req, functionName, maxRequests = 20) {
         return {
             allowed: true,
             remaining: maxRequests - record.count,
-            resetAt: record.windowStart + WINDOW_MS,
+            resetAt: record.windowStart + windowMs,
         };
     } catch (err) {
         // If Blobs service is down, fail open — don't block legitimate requests
         console.warn(`[rate-limiter] Blob store error (failing open): ${err.message}`);
-        return { allowed: true, remaining: maxRequests, resetAt: now + WINDOW_MS };
+        return { allowed: true, remaining: maxRequests, resetAt: now + windowMs };
     }
 }
