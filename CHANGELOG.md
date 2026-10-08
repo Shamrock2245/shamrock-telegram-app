@@ -9,6 +9,13 @@ All notable changes to the Shamrock Telegram channel are recorded here.
 - `/api/miniapp` opts in: a Blobs error now returns `503 rate_limit_unavailable` with a "try again in a few minutes, or call (239) 332-2245" message, and nothing is forwarded to GAS.
 - Default behavior is unchanged: `crm-intake` and the `ai-client` rate-limit helper still fail open.
 
+## 2026-10-08 — Documents lookup refused cleanly in /api/miniapp
+
+### Fixed
+- GAS has no `handleTelegramDocumentLookup`, so `telegram_document_lookup` always failed with a server error. `/api/miniapp` now answers it with `503 document_lookup_unavailable` and a "please call (239) 332-2245" message, with no GAS call.
+- The ownership check still runs first: initData, the Telegram-signed contact for the same user, and a typed phone must match the verified one (403/401 otherwise).
+- `shared/brand.js` shows the same message on the documents page.
+
 ## 2026-10-08 — Shannon mid-call tool relay (/api/shannon-tool)
 
 ### Security

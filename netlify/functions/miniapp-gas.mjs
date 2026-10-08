@@ -89,6 +89,15 @@ export function createMiniappHandler(deps = {}) {
             forward.phone = contact.phone;
             forward.verifiedTelegramPhone = true;
             forward.source = 'telegram_mini_app';
+            // GAS has no handleTelegramDocumentLookup; refuse after the ownership check
+            // so a typed phone still has to match the Telegram-verified one.
+            if (action === 'telegram_document_lookup') {
+                return json({
+                    success: false,
+                    error: 'document_lookup_unavailable',
+                    message: 'Document lookup is temporarily unavailable. Please call (239) 332-2245 and we will pull up your packet.',
+                }, 503);
+            }
         } else if (action === 'telegram_mini_app_upload') {
             const b64 = String(body.base64Data || '');
             if (!b64) return json({ success: false, error: 'missing_file' }, 400);
