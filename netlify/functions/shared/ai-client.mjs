@@ -6,6 +6,7 @@
  *   OPENAI_API_KEY  — OpenAI key (auto-injected by AI Gateway on Netlify)
  *   GROK_API_KEY    — xAI / Grok key
  *   GAS_ENDPOINT    — Google Apps Script web app URL
+ *   GAS_API_KEY     — GAS inbound API key (sent as apiKey on post_slack_message)
  */
 import OpenAI from 'openai';
 import { checkLimit } from './rate-limiter.mjs';
@@ -63,6 +64,14 @@ if (!_gasUrl) {
     console.error('[ai-client] FATAL: GAS_WEB_APP_URL is not set. All GAS-dependent functions will fail.');
 }
 export const GAS_ENDPOINT = _gasUrl || 'MISSING_GAS_WEB_APP_URL';
+
+// ── GAS API key (server-side only, never sent to a browser)
+// Same Netlify env var as shared/crm-intake.mjs and the edge functions: GAS_API_KEY.
+// GAS checks it as data.apiKey (Code.js → requireGasApiKey_). Send it on every
+// post_slack_message call. An older GAS that does not check it ignores the field.
+export function gasApiKey() {
+    return String(process.env.GAS_API_KEY || '').trim();
+}
 
 // ── CORS headers for Telegram WebView
 export const CORS_HEADERS = {
