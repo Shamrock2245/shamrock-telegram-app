@@ -20,7 +20,7 @@
  * If distance > 50 miles, posts a Slack alert and returns alert: true.
  * No AI needed — pure Haversine math.
  */
-import { GAS_ENDPOINT, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
+import { GAS_ENDPOINT, gasApiKey, handleOptions, errorResponse, jsonResponse, parseBody } from './shared/ai-client.mjs';
 
 // County center coordinates (approximate centers of each served county)
 const COUNTY_CENTERS = {
@@ -112,6 +112,7 @@ export default async (req) => {
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 action: 'post_slack_message',
+                apiKey: gasApiKey(),
                 channel: '#alerts',
                 message: slackMessage,
             }),

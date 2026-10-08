@@ -17,7 +17,7 @@
  * - Mentions of "running", "disappearing", "warrant"
  * - Sudden urgency about financial obligations
  */
-import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { getOpenAI, GAS_ENDPOINT, gasApiKey } from './shared/ai-client.mjs';
 
 const CLASSIFIER_PROMPT = `You are a bail bond risk analyst. Classify the sentiment of client messages to detect potential flight risk.
 
@@ -156,6 +156,7 @@ export default async () => {
                         headers: { 'Content-Type': 'text/plain' },
                         body: JSON.stringify({
                             action: 'post_slack_message',
+                            apiKey: gasApiKey(),
                             channel: '#alerts',
                             message: slackMessage,
                         }),

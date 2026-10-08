@@ -2,6 +2,14 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — GAS API key on Slack posts
+
+### Changed
+
+- Every `post_slack_message` call to GAS now sends `apiKey` from the Netlify env var `GAS_API_KEY`. That's the same variable `shared/crm-intake.mjs` and the edge functions already read. There are four callers: `checkin-geo-alert`, `sentiment-watchdog`, `daily-briefing` and `compliance-digest`. The key is read server-side through `gasApiKey()` in `shared/ai-client.mjs` and is never returned to the caller.
+  - This prepares for a GAS change that will require the key on `post_slack_message`. Until that GAS change is pushed, GAS ignores the field.
+- `npm test` fails if any `post_slack_message` body lacks `apiKey: gasApiKey()`, or if a new caller appears.
+
 ## 2026-10-08 — Compliance digest unscheduled
 
 ### Changed

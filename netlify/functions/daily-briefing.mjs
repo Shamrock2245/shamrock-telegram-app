@@ -6,7 +6,7 @@
  * PLUS a real-time Forfeiture Countdown section showing bonds
  * at risk of forfeiture, sorted by highest financial exposure.
  */
-import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { getOpenAI, GAS_ENDPOINT, gasApiKey } from './shared/ai-client.mjs';
 
 export default async () => {
     console.log('[daily-briefing] Generating morning briefing...');
@@ -108,6 +108,7 @@ Keep it motivational. End with a short inspirational note. Use Slack emoji and f
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 action: 'post_slack_message',
+                apiKey: gasApiKey(),
                 channel: '#general',
                 message: briefing,
             }),

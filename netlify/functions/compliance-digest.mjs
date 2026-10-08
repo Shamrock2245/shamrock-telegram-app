@@ -15,7 +15,7 @@
  * Fetches missed check-ins and compliance issues from GAS,
  * generates an AI summary, and posts to Slack.
  */
-import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { getOpenAI, GAS_ENDPOINT, gasApiKey } from './shared/ai-client.mjs';
 
 // Strictly the string 'true'. Anything else ('1', 'TRUE', 'yes', unset) keeps it disabled.
 export function complianceDigestEnabled() {
@@ -83,6 +83,7 @@ Be concise and actionable. Use Slack formatting (bold, emoji, bullet points).`,
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 action: 'post_slack_message',
+                apiKey: gasApiKey(),
                 channel: '#compliance',
                 message: digest,
             }),
