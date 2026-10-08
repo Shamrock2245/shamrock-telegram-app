@@ -19,7 +19,7 @@ import {
     SHANNON_LINE,
     isOfficeRingTarget,
     officeRingNumbersXml,
-} from './office-ring-targets.js';
+} from '../../shared/office-ring-targets.js';
 
 const EXACT_WHITELIST = new Set([
     '12394771500',

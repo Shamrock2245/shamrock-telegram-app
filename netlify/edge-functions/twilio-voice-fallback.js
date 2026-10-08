@@ -9,7 +9,7 @@ import {
     OFFICE_RING_SECONDS,
     SHANNON_LINE,
     officeRingNumbersXml,
-} from './office-ring-targets.js';
+} from '../../shared/office-ring-targets.js';
 
 const TWILIO_NUMBER = SHANNON_LINE;
 

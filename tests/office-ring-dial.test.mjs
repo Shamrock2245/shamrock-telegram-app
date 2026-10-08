@@ -18,7 +18,7 @@ globalThis.fetch = async (...args) => {
     throw new Error('unexpected Twilio call');
 };
 
-const { OFFICE_RING_TARGETS, SHANNON_LINE } = await import('../netlify/edge-functions/office-ring-targets.js');
+const { OFFICE_RING_TARGETS, SHANNON_LINE } = await import('../shared/office-ring-targets.js');
 const { officeDialTwiml, isHumanDesk } = await import('../netlify/edge-functions/twilio-transfer-office.js');
 const { buildDialTwiML, isOfficeLine } = await import('../netlify/edge-functions/twilio-voice-inbound.js');
 const { fallbackDialTwiml } = await import('../netlify/edge-functions/twilio-voice-fallback.js');

@@ -16,7 +16,7 @@ import {
     SHANNON_LINE,
     isOfficeRingTarget,
     officeRingNumbersXml,
-} from './office-ring-targets.js';
+} from '../../shared/office-ring-targets.js';
 
 const TWILIO_NUMBER = SHANNON_LINE;
 
