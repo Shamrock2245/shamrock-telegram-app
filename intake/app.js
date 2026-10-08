@@ -365,17 +365,20 @@ function submitForm() {
     var gv = function (id) { return (document.getElementById(id) && document.getElementById(id).value && document.getElementById(id).value.trim()) || ''; };
     var facility = gv('defFacility') === 'other' ? gv('defFacilityOther') : gv('defFacility');
 
+    var intakeId = 'TG-' + Date.now().toString(36).toUpperCase();
+    var bondAmount = gv('defBondAmount');
     var intakeData = {
         action: 'telegram_mini_app_intake',
         initData: tgInitData,
+        intakeId: intakeId,
         telegramUserId: tgUser ? String(tgUser.id) : '',
         telegramUsername: tgUser ? (tgUser.username || '') : '',
         DefFirstName: gv('defFirstName'), DefLastName: gv('defLastName'),
-        DefName: gv('defFirstName') + ' ' + gv('defLastName'),
+        DefName: (gv('defFirstName') + ' ' + gv('defLastName')).trim(),
         DefDOB: gv('defDOB'), DefFacility: facility,
-        DefCharges: gv('defCharges'), DefBondAmount: gv('defBondAmount'),
+        DefCharges: gv('defCharges'),
         IndFirstName: gv('indFirstName'), IndLastName: gv('indLastName'),
-        IndName: gv('indFirstName') + ' ' + gv('indLastName'),
+        IndName: (gv('indFirstName') + ' ' + gv('indLastName')).trim(),
         IndDOB: gv('indDOB'), IndRelation: gv('indRelation'),
         IndPhone: gv('indPhone'), IndEmail: gv('indEmail'),
         IndAddress: gv('indAddress'), IndEmployer: gv('indEmployer'), IndJobTitle: gv('indJobTitle'),
@@ -384,23 +387,53 @@ function submitForm() {
         gpsLatitude: locationData ? locationData.latitude : null,
         gpsLongitude: locationData ? locationData.longitude : null,
         manualLocation: locationData ? (locationData.manual || null) : null,
-        // Surety company routing — defaults to 'osi'; staff can override via dashboard before paperwork is sent
-        surety_id: gv('suretyId') || 'osi',
-        source: 'telegram_mini_app', platform: 'telegram',
+        source: 'telegram_miniapp', platform: 'telegram',
         timestamp: new Date().toISOString(),
         consent: true,
         consentGiven: true,
         consentTimestamp: new Date().toISOString()
     };
+    if (bondAmount) intakeData.DefBondAmount = bondAmount;
+    // GAS fallback keeps today's surety default. The CRM payload omits it.
+    var gasPayload = Object.assign({}, intakeData, {
+        action: 'telegram_mini_app_intake',
+        source: 'telegram_mini_app',
+        surety_id: gv('suretyId') || 'osi'
+    });
 
     // 1. Instantly show success screen to make the app feel incredibly fast
     clearFormSession('intake');
-    showSuccess();
+    showSuccess(intakeId);
 
-    // 2. Process data in the background
-    gasPost(SHAMROCK_GAS_ENDPOINT, intakeData)
+    // 2. CRM first. GAS only if that call cannot be completed.
+    readIdFrontBase64().then(function (idImage) {
+        var crmPayload = Object.assign({}, intakeData);
+        if (idImage) {
+            crmPayload.id_image_b64 = idImage.b64;
+            crmPayload.id_filename = idImage.name;
+        }
+        return fetch('/.netlify/functions/crm-intake', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(crmPayload)
+        }).then(function (resp) {
+            return resp.json().catch(function () { return {}; }).then(function (data) {
+                return { ok: resp.ok, data: data || {} };
+            });
+        });
+    }).then(function (out) {
+        if (out.data && out.data.success) {
+            console.log('[intake] Submission result:', out.data.via, out.data.intake_id || intakeId);
+            return;
+        }
+        if (out.data && out.data.fallback_attempted) {
+            throw new Error(out.data.error || 'CRM and GAS fallback failed');
+        }
+        console.error('[intake] CRM intake failed; falling back to GAS', out.data && out.data.error);
+        return gasPost(SHAMROCK_GAS_ENDPOINT, gasPayload);
+    })
         .then(function (result) {
-            console.log('[intake] Submission result:', result);
+            if (result) console.log('[intake] Submission result:', result);
             // Upload files in parallel
             var ups = [];
             if (uploadedFiles.idFront) ups.push(uploadFileToGAS(uploadedFiles.idFront, 'id_front', intakeData.telegramUserId));
@@ -451,8 +484,27 @@ function uploadFileToGAS(file, docType, telegramUserId) {
 // SUCCESS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
-function showSuccess() {
-    document.getElementById('successRefId').textContent = 'TG-' + Date.now().toString(36).toUpperCase();
+function readIdFrontBase64() {
+    return new Promise(function (resolve) {
+        var file = uploadedFiles && uploadedFiles.idFront;
+        if (!file) return resolve(null);
+        try {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var raw = String(e.target.result || '');
+                var comma = raw.indexOf(',');
+                resolve({ b64: comma >= 0 ? raw.slice(comma + 1) : raw, name: file.name || 'id.jpg' });
+            };
+            reader.onerror = function () { resolve(null); };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            resolve(null);
+        }
+    });
+}
+
+function showSuccess(refId) {
+    document.getElementById('successRefId').textContent = refId || ('TG-' + Date.now().toString(36).toUpperCase());
     document.querySelector('.form-container').classList.add('hidden');
     document.querySelector('.form-footer').classList.add('hidden');
     document.querySelector('.progress-bar-container').classList.add('hidden');

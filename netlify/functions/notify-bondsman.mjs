@@ -9,6 +9,7 @@
  */
 
 import { GAS_ENDPOINT } from './shared/ai-client.mjs';
+import { buildCrmIntakeBody, submitCrmIntake } from './shared/crm-intake.mjs';
 
 const SHARED_SECRET = process.env.SEND_PAPERWORK_SECRET || null;
 
@@ -76,6 +77,21 @@ export default async (req, context) => {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
+
+        const crmBody = buildCrmIntakeBody('shannon_voice', { said: data });
+        const crm = await submitCrmIntake(crmBody);
+        if (crm.ok) {
+            return new Response(JSON.stringify({
+                success: true,
+                via: 'crm',
+                intake_id: crm.intake_id,
+                message: "I've passed your information to our bondsman. They'll call you back shortly."
+            }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+        }
+        console.error('[notify-bondsman] CRM intake failed; falling back to GAS error=' + crm.error);
 
         // Forward to GAS
         const gasUrl = new URL(GAS_ENDPOINT);

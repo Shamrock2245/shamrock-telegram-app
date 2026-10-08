@@ -2,6 +2,14 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-07 — Canonical CRM intake
+
+### Changed
+
+- Telegram mini-app intake and Shannon's notify-bondsman tool now open a lead with `POST /api/intake/submit` on ShamrockLeads. Source tags are `telegram_miniapp` and `shannon_voice`.
+- An uploaded ID is scanned first. The stated name, address, phone, and best email then fill that scan. Blank bond amounts and generated booking keys are not sent.
+- The previous GAS queue runs only when the CRM call fails, and that failure is logged.
+
 ## 2026-08-16 — Direct paperwork retirement and authoritative-path alignment
 
 ### Changed
