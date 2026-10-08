@@ -17,10 +17,13 @@ const WINDOW_MS = 60_000; // 1-minute window
  * @param {Request} req - The incoming request
  * @param {string} functionName - Name of the function (used as key prefix)
  * @param {number} maxRequests - Max requests allowed per window (default: 20)
- * @param {{ windowMs?: number, subject?: string, store?: { get: Function, set: Function } }} [options]
+ * @param {{ windowMs?: number, subject?: string, store?: { get: Function, set: Function }, failClosed?: boolean }} [options]
  *   subject replaces the IP in the key. store replaces the Netlify Blobs store.
  *   Existing callers keep a 60s window keyed by IP.
- * @returns {{ allowed: boolean, remaining: number, resetAt: number }}
+ *   failClosed (opt-in): if the store errors, return allowed:false with unavailable:true
+ *   instead of failing open. Callers that opt in should answer 503. Default stays
+ *   fail-open so ai-client / crm-intake behavior is unchanged.
+ * @returns {{ allowed: boolean, remaining: number, resetAt: number, unavailable?: boolean }}
  */
 export async function checkLimit(req, functionName, maxRequests = 20, options) {
     const opts = options || {};
@@ -69,7 +72,12 @@ export async function checkLimit(req, functionName, maxRequests = 20, options) {
             resetAt: record.windowStart + windowMs,
         };
     } catch (err) {
-        // If Blobs service is down, fail open — don't block legitimate requests
+        if (opts.failClosed) {
+            // Opt-in: no limit record, no request. The caller answers 503.
+            console.warn(`[rate-limiter] Blob store error (failing closed) fn=${functionName}: ${err && err.name}`);
+            return { allowed: false, remaining: 0, resetAt: now + windowMs, unavailable: true };
+        }
+        // Default: if Blobs service is down, fail open — don't block legitimate requests
         console.warn(`[rate-limiter] Blob store error (failing open): ${err.message}`);
         return { allowed: true, remaining: maxRequests, resetAt: now + windowMs };
     }

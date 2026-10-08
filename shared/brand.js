@@ -80,7 +80,8 @@ async function miniappPost(payload) {
     let data = null;
     try { data = await resp.json(); } catch (e) { data = null; }
     if (!resp.ok) {
-        const err = new Error((data && data.error) || ('Server error ' + resp.status));
+        const friendly = data && data.error === 'rate_limit_unavailable' && data.message;
+        const err = new Error(friendly || (data && data.error) || ('Server error ' + resp.status));
         err.status = resp.status;
         err.data = data;
         throw err;

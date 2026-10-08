@@ -2,6 +2,13 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — /api/miniapp rate limit fails closed when Blobs is down
+
+### Security
+- `shared/rate-limiter.mjs` `checkLimit` gains an opt-in `failClosed` option. When the Blobs store errors, it returns `allowed:false, unavailable:true` instead of allowing the request.
+- `/api/miniapp` opts in: a Blobs error now returns `503 rate_limit_unavailable` with a "try again in a few minutes, or call (239) 332-2245" message, and nothing is forwarded to GAS.
+- Default behavior is unchanged: `crm-intake` and the `ai-client` rate-limit helper still fail open.
+
 ## 2026-10-08 — Documents lookup refused cleanly in /api/miniapp
 
 ### Fixed

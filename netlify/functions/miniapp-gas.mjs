@@ -111,12 +111,20 @@ export function createMiniappHandler(deps = {}) {
         forward.telegramUsername = anonymous ? '' : String((auth.user && auth.user.username) || '');
         if (action === 'telegram_mini_app_intake') forward.telegramChatId = auth.userId;
 
-        // 3. Per-user rate limit (fails open if Blobs is down; GAS also limits intake/upload).
+        // 3. Per-user rate limit. Fails CLOSED: if Blobs is down, answer 503 and forward nothing.
         const limit = await checkLimit(req, 'miniapp-' + (isLookup ? 'lookup' : 'write'), isLookup ? 10 : 30, {
             windowMs: 10 * 60 * 1000,
             subject: 'tg:' + auth.userId,
+            failClosed: true,
             ...(rateStore ? { store: rateStore } : {}),
         });
+        if (limit.unavailable) {
+            return json({
+                success: false,
+                error: 'rate_limit_unavailable',
+                message: 'We are having a brief technical issue. Please try again in a few minutes, or call (239) 332-2245.',
+            }, 503);
+        }
         if (!limit.allowed) return json({ success: false, error: 'rate_limited' }, 429);
 
         const key = gasApiKey();
