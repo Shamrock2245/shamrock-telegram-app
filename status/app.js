@@ -13,9 +13,6 @@
 // ═══════════════════════════════════════════════════════════════
 
 const STATUS_CONFIG = {
-    GAS_ENDPOINT: typeof SHAMROCK_GAS_ENDPOINT !== 'undefined'
-        ? SHAMROCK_GAS_ENDPOINT
-        : null,
     ACTION_LOOKUP: 'telegram_status_lookup'
 };
 
@@ -121,40 +118,28 @@ async function handleLookup() {
 
     if (tg) tg.HapticFeedback.impactOccurred('medium');
 
-    const payload = {
-        action: STATUS_CONFIG.ACTION_LOOKUP,
-        phone: phone.replace(/\D/g, ''),
-        name: name,
-        telegramUserId: tgUser?.id?.toString() || '',
-        source: 'telegram_mini_app',
-        timestamp: new Date().toISOString()
-    };
-
     let caseData = null;
 
-    // Try real GAS lookup (CORS-enabled doPost returns JSON)
+    // Lookup through /api/miniapp. It runs only on the caller's Telegram-verified phone
+    // (Telegram.WebApp.requestContact, signature checked server-side).
     try {
-        const resp = await fetch(STATUS_CONFIG.GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
-
-        if (resp.ok) {
-            const result = await resp.json();
-            if (result.success && result.caseData) {
-                caseData = result.caseData;
-                console.log('✅ Real case data received from GAS');
-            } else if (result.success && !result.caseData) {
-                // Lookup logged but no case data found — show not-found
-                caseData = buildNotFoundData(name, phone);
-                console.log('ℹ️ Lookup logged, no case found');
-            }
+        const result = await miniappLookup(STATUS_CONFIG.ACTION_LOOKUP, phone.replace(/\D/g, ''));
+        if (result && result.success && result.caseData) {
+            caseData = result.caseData;
+        } else if (result && result.success && !result.caseData) {
+            caseData = buildNotFoundData(name, phone);
         }
     } catch (err) {
-        console.log('GAS lookup error:', err.message);
-        // P1-8: Network error — distinguish from "case not found"
+        console.log('Lookup error:', err.message);
+        if (err.status || !(err instanceof TypeError)) {
+            // Refused (phone not verified / not yours) or contact not shared: say why, stay put.
+            if (tg) tg.showAlert(err.message); else alert(err.message);
+            btn.disabled = false;
+            if (btnText) btnText.classList.remove('hidden');
+            if (btnLoader) btnLoader.classList.add('hidden');
+            return;
+        }
+        // Network error — distinguish from "case not found"
         caseData = buildOfflineData(name, phone);
     }
 

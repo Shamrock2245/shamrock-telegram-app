@@ -10,7 +10,8 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-const GAS_ENDPOINT = null;
+// All GAS calls go through /api/miniapp (shared/brand.js miniappPost / miniappLookup).
+// (This page used to have its GAS URL set to null, so lookup, upload, check-in and updates all failed.)
 const PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 
 /** Documents the defendant needs to sign (subset of full packet) */
@@ -110,8 +111,10 @@ async function lookupCase() {
 
     errorEl.classList.add('hidden');
 
-    if (!caseNum && phone.length < 10) {
-        errorEl.textContent = 'Please enter a case number or 10-digit phone number.';
+    // Lookups run on the phone Telegram verified for this user (requestContact). A typed
+    // phone must match it; a case number alone cannot prove ownership, so it is not sent.
+    if (phone && phone.length < 10) {
+        errorEl.textContent = 'Please enter your 10-digit phone number, or leave it blank to use your Telegram number.';
         errorEl.classList.remove('hidden');
         return;
     }
@@ -120,17 +123,27 @@ async function lookupCase() {
     loader.classList.remove('hidden');
 
     try {
-        const params = new URLSearchParams({
-            action: 'telegram_defendant_lookup',
-            ...(caseNum ? { caseNumber: caseNum } : { phone })
-        });
-
-        const response = await fetch(`${GAS_ENDPOINT}?${params}`);
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error || 'Case not found. Check your case number and try again.');
+        // GAS has no telegram_defendant_lookup; the status lookup returns the case for the
+        // verified phone (defendant or indemnitor phone on file).
+        const result = await miniappLookup('telegram_status_lookup', phone);
+        const cd = result && result.success && result.caseData;
+        if (!cd) {
+            throw new Error((result && result.error) || 'No case found for your phone number. Call us at ' + SHAMROCK_PHONE + '.');
         }
+        const summary = cd.caseSummary || {};
+        if (caseNum && summary.caseNumber && String(summary.caseNumber).trim() !== caseNum) {
+            throw new Error('That case number does not match the case on your phone number.');
+        }
+        const data = {
+            success: true,
+            defendantName: cd.name,
+            defendantPhone: cd.phone,
+            caseNumber: summary.caseNumber,
+            bondStatus: cd.status,
+            bondAmount: summary.bondAmount,
+            remainingBalance: cd.payment ? cd.payment.remainingBalance : null,
+            documents: cd.documents || []
+        };
 
         currentCase = data;
         renderPortal(data);
@@ -312,30 +325,21 @@ async function handleDefSupportDocs(e) {
 
 async function uploadFileToGAS(file, uploadType) {
     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
+        prepareUploadBase64(file).then(async (up) => {
             try {
-                const base64 = ev.target.result.split(',')[1];
-                const res = await fetch(GAS_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'telegram_mini_app_upload',
-                        caseNumber: currentCase?.caseNumber || 'unknown',
-                        fileName: file.name,
-                        mimeType: file.type,
-                        base64Data: base64,
-                        uploadType,
-                        role: 'defendant'
-                    })
+                const data = await miniappPost({
+                    action: 'telegram_mini_app_upload',
+                    caseNumber: currentCase?.caseNumber || 'unknown',
+                    fileName: up.fileName,
+                    mimeType: up.mimeType,
+                    base64Data: up.base64,
+                    uploadType,
+                    role: 'defendant'
                 });
-                const data = await res.json();
                 if (data.success) resolve(data);
                 else reject(new Error(data.error || 'Upload failed'));
             } catch (err) { reject(err); }
-        };
-        reader.onerror = () => reject(new Error('File read failed'));
-        reader.readAsDataURL(file);
+        }).catch(() => reject(new Error('File read failed')));
     });
 }
 
@@ -396,25 +400,23 @@ async function submitCheckin() {
     loader.classList.remove('hidden');
 
     try {
-        // Upload selfie
-        const selfieBase64 = await readFileAsBase64(selfieFile);
-
-        const res = await fetch(GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'telegram_checkin_log',
-                caseNumber: currentCase?.caseNumber,
-                phone: currentCase?.defendantPhone || '',
-                name: currentCase?.defendantName || '',
-                latitude: gpsData.lat,
-                longitude: gpsData.lng,
-                selfieBase64: selfieBase64,
-                selfieFileName: selfieFile.name,
-                selfieMimeType: selfieFile.type
-            })
+        // Log the check-in, then upload the selfie separately (GAS stores uploads in Drive;
+        // the check-in log only records that a selfie exists).
+        const data = await miniappPost({
+            action: 'telegram_checkin_log',
+            caseNumber: currentCase?.caseNumber,
+            phone: currentCase?.defendantPhone || '',
+            name: currentCase?.defendantName || '',
+            latitude: gpsData.lat,
+            longitude: gpsData.lng,
+            hasSelfie: true,
+            source: 'telegram_mini_app'
         });
-        const data = await res.json();
+        try {
+            await uploadFileToGAS(selfieFile, 'checkin_selfie');
+        } catch (upErr) {
+            console.log('Selfie upload (non-fatal):', upErr.message);
+        }
 
         if (data.success) {
             resultEl.className = 'checkin-result success';
@@ -452,20 +454,16 @@ async function submitUpdate() {
     }
 
     try {
-        const res = await fetch(GAS_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'telegram_client_update',
-                caseNumber: currentCase?.caseNumber,
-                phone: currentCase?.defendantPhone || '',
-                name: currentCase?.defendantName || '',
-                updateType: type,
-                updateDetails: details,
-                role: 'defendant'
-            })
+        const data = await miniappPost({
+            action: 'telegram_client_update',
+            caseNumber: currentCase?.caseNumber,
+            phone: currentCase?.defendantPhone || '',
+            name: currentCase?.defendantName || '',
+            updateType: type,
+            updateDetails: details,
+            formData: { details: details },
+            role: 'defendant'
         });
-        const data = await res.json();
 
         if (data.success) {
             alert('Update submitted! We\'ll review it shortly.');

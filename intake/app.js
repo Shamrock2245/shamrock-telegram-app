@@ -2,9 +2,9 @@
  * Shamrock Bail Bonds — Telegram Mini App
  * intake/app.js — uses globals from shared/brand.js:
  *   tg, tgUser, tgInitData, initTelegram, initTheme, toggleTheme,
- *   formatPhone, gasPost, captureLocationTiered,
+ *   formatPhone, miniappPost, prepareUploadBase64, captureLocationTiered,
  *   saveFormSession, loadFormSession, clearFormSession, debounce,
- *   SHAMROCK_GAS_ENDPOINT, SHAMROCK_PHONE, SHAMROCK_PAYMENT_LINK
+ *   SHAMROCK_PHONE, SHAMROCK_PAYMENT_LINK
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -348,7 +348,7 @@ function populateReview() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FORM SUBMISSION — uses brand.js gasPost() for real response handling
+// FORM SUBMISSION — GAS fallback goes through /api/miniapp (brand.js miniappPost)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function submitForm() {
@@ -430,7 +430,7 @@ function submitForm() {
     }
 
     function saveThroughGas() {
-        return gasPost(SHAMROCK_GAS_ENDPOINT, gasPayload).then(function (result) {
+        return miniappPost(gasPayload).then(function (result) {
             if (result) console.log('[intake] Submission result:', result);
             return uploadIntakeIds().then(function () { notifyTelegram(); });
         }).catch(function (err) {
@@ -504,23 +504,16 @@ function recoverIntakeSave(error, actions) {
 }
 
 function uploadFileToGAS(file, docType, telegramUserId) {
-    return new Promise(function (resolve) {
-        try {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var base64 = e.target.result.split(',')[1];
-                gasPost(SHAMROCK_GAS_ENDPOINT, {
-                    action: 'telegram_mini_app_upload',
-                    telegramUserId: telegramUserId,
-                    docType: docType,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    base64Data: base64
-                }).then(function () { resolve(); }).catch(function () { resolve(); });
-            };
-            reader.readAsDataURL(file);
-        } catch (err) { resolve(); }
-    });
+    // telegramUserId is set server-side from verified initData; the argument is ignored.
+    return prepareUploadBase64(file).then(function (up) {
+        return miniappPost({
+            action: 'telegram_mini_app_upload',
+            docType: docType,
+            fileName: up.fileName,
+            mimeType: up.mimeType,
+            base64Data: up.base64
+        });
+    }).then(function () { }).catch(function () { });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -10,10 +10,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 
-// Stable factory URL — must match shared/brand.js SHAMROCK_GAS_ENDPOINT and Netlify GAS_WEB_APP_URL
-const GAS_ENDPOINT = (typeof SHAMROCK_GAS_ENDPOINT !== 'undefined' && SHAMROCK_GAS_ENDPOINT)
-    ? SHAMROCK_GAS_ENDPOINT
-    : null;
+// All GAS calls go through /api/miniapp (shared/brand.js miniappPost / miniappLookup).
 
 /**
  * Master document packet definition.
@@ -191,8 +188,10 @@ async function lookupDocuments() {
 
     errorEl.classList.add('hidden');
 
-    if (!caseNumber && phone.length < 10) {
-        errorEl.textContent = 'Please enter a case number or 10-digit phone number.';
+    // Lookups run on the phone Telegram verified for this user (requestContact). A typed
+    // phone must match it; a case number alone cannot prove ownership, so it is not sent.
+    if (phone && phone.length < 10) {
+        errorEl.textContent = 'Please enter your 10-digit phone number, or leave it blank to use your Telegram number.';
         errorEl.classList.remove('hidden');
         return;
     }
@@ -202,13 +201,7 @@ async function lookupDocuments() {
     loaderEl.classList.remove('hidden');
 
     try {
-        const params = new URLSearchParams({
-            action: 'telegram_document_lookup',
-            ...(caseNumber ? { caseNumber } : { phone })
-        });
-
-        const response = await fetch(`${GAS_ENDPOINT}?${params}`);
-        const data = await response.json();
+        const data = await miniappLookup('telegram_document_lookup', phone);
 
         if (!data.success) {
             throw new Error(data.error || 'Case not found. Check your case number and try again.');
@@ -419,31 +412,22 @@ async function handleSupportingFiles(e) {
 
 async function uploadFile(file) {
     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
+        prepareUploadBase64(file).then(async (up) => {
             try {
-                const base64 = ev.target.result.split(',')[1];
-                const response = await fetch(GAS_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'telegram_mini_app_upload',
-                        caseNumber: currentCase?.caseNumber || 'unknown',
-                        fileName: file.name,
-                        mimeType: file.type,
-                        base64Data: base64,
-                        uploadType: 'supporting_document'
-                    })
+                const data = await miniappPost({
+                    action: 'telegram_mini_app_upload',
+                    caseNumber: currentCase?.caseNumber || 'unknown',
+                    fileName: up.fileName,
+                    mimeType: up.mimeType,
+                    base64Data: up.base64,
+                    uploadType: 'supporting_document'
                 });
-                const data = await response.json();
                 if (data.success) resolve(data);
                 else reject(new Error(data.error));
             } catch (err) {
                 reject(err);
             }
-        };
-        reader.onerror = () => reject(new Error('File read failed'));
-        reader.readAsDataURL(file);
+        }).catch(() => reject(new Error('File read failed')));
     });
 }
 

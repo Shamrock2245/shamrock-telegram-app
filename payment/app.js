@@ -14,10 +14,6 @@
 // ═══════════════════════════════════════════════════════════════
 
 const PAYMENT_CONFIG = {
-    GAS_ENDPOINT: typeof SHAMROCK_GAS_ENDPOINT !== 'undefined'
-        ? SHAMROCK_GAS_ENDPOINT
-        : null,
-
     SWIPESIMPLE_LINK: typeof SHAMROCK_PAYMENT_LINK !== 'undefined'
         ? SHAMROCK_PAYMENT_LINK
         : 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8',
@@ -176,12 +172,8 @@ async function handleLookup() {
 
     // Try real GAS lookup — if it fails, proceed optimistically
     try {
-        const lookupResult = await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
-            action: PAYMENT_CONFIG.ACTION_LOOKUP,
-            phone: phone.replace(/\D/g, ''),
-            name: name,
-            telegramUserId: tgUser?.id?.toString() || ''
-        });
+        // Runs only on the caller's Telegram-verified phone (server-checked).
+        const lookupResult = await miniappLookup(PAYMENT_CONFIG.ACTION_LOOKUP, phone.replace(/\D/g, ''));
         if (lookupResult && lookupResult.caseData) {
             state.caseData = lookupResult.caseData;
         }
@@ -330,7 +322,7 @@ async function submitCheckin() {
     (async () => {
         // Log check-in to GAS
         try {
-            await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+            await miniappPost({
                 action: PAYMENT_CONFIG.ACTION_CHECKIN_LOG,
                 referenceId: state.referenceId,
                 name: state.name,
@@ -351,13 +343,16 @@ async function submitCheckin() {
         if (state.selfieBase64) {
             try {
                 if (btnText) btnText.textContent = 'Uploading photo...';
-                await gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+                // Shrinks large photos so the upload fits the serverless body limit.
+                const up = state.selfieFile
+                    ? await prepareUploadBase64(state.selfieFile)
+                    : { base64: state.selfieBase64.split(',')[1], mimeType: 'image/jpeg' };
+                await miniappPost({
                     action: 'telegram_mini_app_upload',
-                    telegramUserId: tgUser?.id?.toString() || '',
                     docType: 'checkin_selfie',
                     fileName: `checkin_${state.referenceId}.jpg`,
-                    mimeType: state.selfieFile?.type || 'image/jpeg',
-                    base64Data: state.selfieBase64.split(',')[1]
+                    mimeType: up.mimeType || 'image/jpeg',
+                    base64Data: up.base64
                 });
             } catch (err) {
                 console.log('Selfie upload (non-fatal):', err.message);
@@ -475,7 +470,7 @@ function handlePayNow(e) {
 
 function logPaymentToGAS(status) {
     // Fire-and-forget — non-fatal
-    gasPost(PAYMENT_CONFIG.GAS_ENDPOINT, {
+    miniappPost({
         action: PAYMENT_CONFIG.ACTION_PAYMENT_LOG,
         referenceId: state.referenceId,
         name: state.name,
