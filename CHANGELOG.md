@@ -2,6 +2,13 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-08 — Compliance digest loads again
+
+### Fixed
+
+- `compliance-digest.mjs` no longer imports `Config` from `@netlify/functions`. That name is a TypeScript type, not a runtime export, so the module failed to load. The daily `0 13 * * *` schedule is still declared with `export const config`.
+- `npm test` now imports every Netlify function module and fails if one cannot load.
+
 ## 2026-10-08 — Mini-app intake auth and fallback
 
 ### Changed

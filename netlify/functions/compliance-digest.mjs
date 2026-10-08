@@ -5,7 +5,6 @@
  * Fetches missed check-ins and compliance issues from GAS,
  * generates an AI summary, and posts to Slack.
  */
-import { Config } from '@netlify/functions';
 import { getOpenAI, GAS_ENDPOINT } from './shared/ai-client.mjs';
 
 export default async () => {
@@ -75,6 +74,9 @@ Be concise and actionable. Use Slack formatting (bold, emoji, bullet points).`,
     }
 };
 
+// Netlify reads the schedule from this plain object. `Config` in
+// @netlify/functions is a TypeScript type only and is not exported at runtime,
+// so importing it from this .mjs file stops the module from loading.
 export const config = {
     schedule: '0 13 * * *',
 };
