@@ -4,7 +4,8 @@
  * Caches shared design assets for faster repeat loads.
  */
 
-const CACHE_NAME = 'shamrock-v2';
+// v3: pages now call /api/miniapp, not the GAS URL. Bumping drops cached v2 brand.js/app.js.
+const CACHE_NAME = 'shamrock-v3';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to pre-cache on install

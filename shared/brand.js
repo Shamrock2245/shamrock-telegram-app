@@ -61,34 +61,128 @@ function isValidPhone(phone) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GAS ENDPOINT CONFIG
+// MINI APP API — every GAS action goes through /api/miniapp
+// The pages never call the GAS /exec URL. /api/miniapp verifies Telegram initData
+// (and, for lookups, the Telegram-verified phone) and adds the GAS key server-side.
 // ═══════════════════════════════════════════════════════════════
 
-const SHAMROCK_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyCIDPzA_EA1B1SGsfhYiXRGKM8z61EgACZdDPILT_MjjXee0wSDEI0RRYthE0CvP-Z/exec';
+const SHAMROCK_MINIAPP_API = '/api/miniapp';
 const SHAMROCK_PHONE = '(239) 332-2245';
 const SHAMROCK_PAYMENT_LINK = 'https://swipesimple.com/links/lnk_07a13eb404d7f3057a56d56d8bb488c8';
 
-// ═══════════════════════════════════════════════════════════════
-// GAS FETCH HELPER — replaces all no-cors fire-and-forget patterns
-// Uses Content-Type: text/plain to avoid CORS preflight on GAS doPost.
-// Returns parsed JSON or throws on network/server error.
-// ═══════════════════════════════════════════════════════════════
-async function gasPost(endpoint, payload) {
-    const resp = await fetch(endpoint, {
+// POST one action. Sends initData; returns parsed JSON (with success:false on refusal).
+async function miniappPost(payload) {
+    const resp = await fetch(SHAMROCK_MINIAPP_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload),
-        redirect: 'follow'
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({}, payload, { initData: tgInitData }))
     });
+    let data = null;
+    try { data = await resp.json(); } catch (e) { data = null; }
     if (!resp.ok) {
-        throw new Error('Server error ' + resp.status);
+        const err = new Error((data && data.error) || ('Server error ' + resp.status));
+        err.status = resp.status;
+        err.data = data;
+        throw err;
     }
+    return data || { success: true, _opaque: true };
+}
+
+// Kept for older callers: same signature as before, but always goes through /api/miniapp.
+async function gasPost(_endpoint, payload) {
+    return miniappPost(payload);
+}
+
+// Telegram-signed phone for lookups. Asks once per session via WebApp.requestContact;
+// the server verifies the signature. Never send or trust responseUnsafe.
+const CONTACT_CACHE_KEY = 'shamrock-tg-contact';
+function getVerifiedContact() {
     try {
-        return await resp.json();
-    } catch (e) {
-        // GAS sometimes returns non-JSON on redirect — treat as success
-        return { success: true, _opaque: true };
+        const cached = sessionStorage.getItem(CONTACT_CACHE_KEY);
+        if (cached) {
+            const authDate = Number(new URLSearchParams(cached).get('auth_date') || 0);
+            if (authDate && (Date.now() / 1000 - authDate) < 23 * 3600) return Promise.resolve(cached);
+        }
+    } catch (e) { }
+    return new Promise(function (resolve, reject) {
+        if (!tg || typeof tg.requestContact !== 'function') {
+            reject(new Error('Please update Telegram, or call us at ' + SHAMROCK_PHONE + '.'));
+            return;
+        }
+        tg.requestContact(function (ok, res) {
+            if (ok && res && res.response) {
+                try { sessionStorage.setItem(CONTACT_CACHE_KEY, res.response); } catch (e) { }
+                resolve(res.response);
+            } else {
+                reject(new Error('To look up your case, share your Telegram phone number. Or call us at ' + SHAMROCK_PHONE + '.'));
+            }
+        });
+    });
+}
+
+// Lookup by the caller's own Telegram-verified phone. A typed phone must match it.
+async function miniappLookup(action, phone) {
+    const contact = await getVerifiedContact();
+    try {
+        return await miniappPost({ action: action, phone: phone || '', contact: contact });
+    } catch (err) {
+        const code = err.data && err.data.error;
+        if (err.data && err.data.needContact) {
+            try { sessionStorage.removeItem(CONTACT_CACHE_KEY); } catch (e) { }
+        }
+        const friendly = {
+            not_your_phone: 'You can only look up the phone number on your Telegram account.',
+            case_number_lookup_not_allowed: 'Look up by your phone number instead of a case number.',
+            phone_not_verified: 'Please share your Telegram phone number and try again.',
+            contact_user_mismatch: 'Please share your own Telegram phone number and try again.',
+            unauthorized: 'Please reopen this page from the Shamrock Telegram bot and try again.',
+            rate_limited: 'Too many lookups. Please wait a few minutes and try again.'
+        }[code];
+        if (friendly) {
+            const e2 = new Error(friendly);
+            e2.status = err.status;
+            e2.data = err.data;
+            throw e2;
+        }
+        throw err;
     }
+}
+
+// Read a file as base64 for upload. Photos over ~3 MB are shrunk (max 2048 px, JPEG)
+// so the request fits the 6 MB serverless body limit.
+function prepareUploadBase64(file) {
+    const LIMIT = 3 * 1024 * 1024;
+    function readRaw(f) {
+        return new Promise(function (resolve, reject) {
+            const reader = new FileReader();
+            reader.onload = function (e) { resolve(String(e.target.result || '').split(',')[1] || ''); };
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+        });
+    }
+    const isImage = /^image\/(jpe?g|png|webp)$/i.test(file.type || '');
+    if (!isImage || file.size <= LIMIT || typeof document === 'undefined') {
+        return readRaw(file).then(function (b64) { return { base64: b64, mimeType: file.type || 'image/jpeg', fileName: file.name || 'upload.jpg' }; });
+    }
+    return new Promise(function (resolve) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = function () {
+            const scale = Math.min(1, 2048 / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url);
+            const b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1] || '';
+            resolve({ base64: b64, mimeType: 'image/jpeg', fileName: (file.name || 'upload').replace(/\.[^.]+$/, '') + '.jpg' });
+        };
+        img.onerror = function () {
+            URL.revokeObjectURL(url);
+            readRaw(file).then(function (b64) { resolve({ base64: b64, mimeType: file.type, fileName: file.name }); });
+        };
+        img.src = url;
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════
