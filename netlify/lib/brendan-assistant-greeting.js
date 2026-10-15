@@ -5,16 +5,16 @@
  */
 
 export const BRENDAN_ASSISTANT_GREETINGS = Object.freeze([
-    "Hi, this is Brendan's assistant at Shamrock Bail Bonds. How can I help?",
-    "Shamrock Bail Bonds, Brendan's assistant speaking. How can I help?",
-    "Thanks for calling Shamrock Bail Bonds. This is Brendan's assistant. Are you calling about someone who's been arrested?",
-    "Shamrock Bail Bonds, this is Brendan's assistant. What can I do for you?",
-    "Hi, you've reached Shamrock Bail Bonds. I'm Brendan's assistant. Who are you calling about?",
-    "Thanks for calling Shamrock. This is Brendan's assistant. How can I help you today?",
-    "Shamrock Bail Bonds, this is Brendan's assistant. We're here 24/7. What can I do for you?",
-    "Shamrock Bail Bonds, Brendan's assistant here. Is this about someone in jail?",
-    "Hi, this is Brendan's assistant at Shamrock Bail Bonds. I'm here to help. What's going on?",
-    "Hello, Shamrock Bail Bonds. This is Brendan's assistant. Take a breath, I'm here to help. Who are we helping today?",
+    "Hi, this is Brendan at Shamrock Bail Bonds. How can I help?",
+    "Shamrock Bail Bonds, this is Brendan speaking. How can I help?",
+    "Thanks for calling Shamrock Bail Bonds. This is Brendan. Are you calling about someone who's been arrested?",
+    "Shamrock Bail Bonds, this is Brendan. What can I do for you?",
+    "Hi, you've reached Shamrock Bail Bonds. This is Brendan. Who are you calling about?",
+    "Thanks for calling Shamrock. This is Brendan. How can I help you today?",
+    "Shamrock Bail Bonds, this is Brendan. We're here 24/7. What can I do for you?",
+    "Shamrock Bail Bonds, Brendan here. Is this about someone in custody?",
+    "Hi, this is Brendan at Shamrock Bail Bonds. I'm here to help. What's going on?",
+    "Hello, Shamrock Bail Bonds. This is Brendan. Take a breath, I'm here to help. Who are we helping today?",
 ]);
 
 export function pickBrendanAssistantGreeting(random = Math.random) {
