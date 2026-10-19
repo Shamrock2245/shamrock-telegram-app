@@ -2,6 +2,14 @@
 
 All notable changes to the Shamrock Telegram channel are recorded here.
 
+## 2026-10-19 — OpenAI and Blobs call-site smoke test
+
+### Added
+
+- `tests/openai-blobs-call-sites.test.mjs` runs the real OpenAI SDK and `@netlify/blobs` call sites with `globalThis.fetch` mocked, so nothing reaches OpenAI, x.ai, or Netlify.
+- It covers `getOpenAI` and `getGrok` (`https://api.x.ai/v1`) in `netlify/functions/shared/ai-client.mjs`, streamed `ai-concierge`, `translate`, Grok `risk-score`, and `checkLimit` window counting through `getStore` / `get` / `set` in `shared/rate-limiter.mjs`.
+- The same file passes on the locked openai 4.x + `@netlify/blobs` 7.x and on openai 7.34.0 + `@netlify/blobs` 11.1.4 under Node 22. OpenAI 4.x binds `node-fetch` instead of global fetch, so the test redirects that specifier onto the mock and blocks raw `http`/`https` requests.
+
 ## 2026-10-08 — /api/miniapp rate limit fails closed when Blobs is down
 
 ### Security
