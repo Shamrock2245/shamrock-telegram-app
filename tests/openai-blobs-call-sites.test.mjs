@@ -28,6 +28,15 @@ const R = new URL('../netlify/functions/', import.meta.url);
 process.env.OPENAI_API_KEY = 'test-key';
 process.env.GROK_API_KEY = 'test-grok';
 process.env.GAS_WEB_APP_URL = 'https://gas.invalid/exec';
+// getOpenAI() honors an inherited OPENAI_BASE_URL (Netlify AI Gateway). Clear it
+// so the default base URL assertion and the translate call to api.openai.com
+// do not depend on the parent shell, then put the original value back.
+const savedOpenAIBaseURL = process.env.OPENAI_BASE_URL;
+delete process.env.OPENAI_BASE_URL;
+test.after(() => {
+    if (savedOpenAIBaseURL === undefined) delete process.env.OPENAI_BASE_URL;
+    else process.env.OPENAI_BASE_URL = savedOpenAIBaseURL;
+});
 // Netlify Blobs runtime context (fake) so getStore('rate-limits') resolves to our mocked fetch.
 // Both @netlify/blobs 7 and 11 read NETLIFY_BLOBS_CONTEXT (base64 JSON with siteID, token, edgeURL).
 process.env.NETLIFY_BLOBS_CONTEXT = Buffer.from(JSON.stringify({
