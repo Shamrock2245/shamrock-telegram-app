@@ -5,7 +5,7 @@
     "private": true,
     "type": "module",
     "dependencies": {
-        "openai": "^4.0.0",
+        "openai": "^7.34.0",
         "@netlify/functions": "^6.0.3",
         "@netlify/blobs": "^11.1.6"
     },
