@@ -6,8 +6,8 @@
     "type": "module",
     "dependencies": {
         "openai": "^7.34.0",
-        "@netlify/functions": "^2.0.0",
-        "@netlify/blobs": "^7.0.0"
+        "@netlify/functions": "^6.0.3",
+        "@netlify/blobs": "^11.1.6"
     },
     "devDependencies": {
         "@netlify/plugin-lighthouse": "^6.0.1"
